@@ -25,10 +25,10 @@ class Depot(object):
             raise ValueError("Couldn't deduce meaning of {}".format(arg))
 
     def get_online_templates(self):
-        pass
+        return Provider(self.config.provider, options=self.config.provider_options).get_online_templates()
 
     def get_offline_templates(self):
-        pass
+        return Provider(self.config.provider, options=self.config.provider_options).get_offline_templates()
 
     def get_all_templates(self):
         return [self.get_online_templates(), self.get_offline_templates()]
