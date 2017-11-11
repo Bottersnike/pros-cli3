@@ -19,3 +19,14 @@ def debug(content, state=None, debug_flag=None):
 
     if debug_flag:
         click.echo('\tDEBUG: {}'.format(content))
+
+def get_app_dir(state=None):
+    if state is None:
+        ctx = click.get_current_context(silent=True)
+        if ctx is not None and isinstance(ctx, click.Context):
+            state = ctx.find_object(State)
+        if state is None or not isinstance(state, State):
+            state = State()
+    if state.appdir is None:
+        state.appdir = click.get_app_dir('PROS')
+    return state.appdir
