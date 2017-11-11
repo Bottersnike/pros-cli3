@@ -69,6 +69,12 @@ class Config(object):
         with open(file, 'w') as f:
             f.write(jsonpickle.encode(self))
 
+    def migrate(self, migration):
+        for (old, new) in migration.iteritems():
+            if self.__dict__.get(old) is not None:
+                self.__dict__[new] = self.__dict__[old]
+                del self.__dict__[old]
+
     @property
     def directory(self) -> str:
         return os.path.dirname(os.path.abspath(self.save_file))
