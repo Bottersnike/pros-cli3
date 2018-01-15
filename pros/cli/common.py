@@ -83,3 +83,48 @@ def default_options(f):
     decorator = verbosity_option(logging_option(logfile_option(machine_output_option(f))))
     decorator.__name__ = f.__name__
     return decorator
+
+
+class AliasGroup(click.Group):
+    def __init__(self, *args, **kwargs):
+        super(AliasGroup, self).__init__(*args, **kwargs)
+        self.cmd_dict = dict()
+
+    def command(self, *args, aliases=None, **kwargs):
+        aliases = aliases or []
+
+        def decorator(f):
+            for alias in aliases:
+                self.cmd_dict[alias] = f.__name__ if len(args) == 0 else args[0]
+            cmd = super(AliasGroup, self).command(*args, **kwargs)(f)
+            self.add_command(cmd)
+            return cmd
+
+        return decorator
+
+    def group(self, aliases=None, *args, **kwargs):
+        aliases = aliases or []
+
+        def decorator(f):
+            for alias in aliases:
+                self.cmd_dict[alias] = f.__name__
+            cmd = super(AliasGroup, self).group(*args, **kwargs)(f)
+            self.add_command(cmd)
+            return cmd
+
+        return decorator
+
+    def get_command(self, ctx, cmd_name):
+        # return super(AliasGroup, self).get_command(ctx, cmd_name)
+        suggestion = super(AliasGroup, self).get_command(ctx, cmd_name)
+        if suggestion is not None:
+            return suggestion
+        if cmd_name in self.cmd_dict:
+            return super(AliasGroup, self).get_command(ctx, self.cmd_dict[cmd_name])
+
+        # fall back to guessing
+        matches = {x for x in self.list_commands(ctx) if x.startswith(cmd_name)}
+        matches.union({x for x in self.cmd_dict.keys() if x.startswith(cmd_name)})
+        if len(matches) == 1:
+            return super(AliasGroup, self).get_command(ctx, matches.pop())
+        return None

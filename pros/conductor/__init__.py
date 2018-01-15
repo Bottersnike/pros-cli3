@@ -1,1 +1,1 @@
-from .project_config import ProjectConfig
+from .project import Project

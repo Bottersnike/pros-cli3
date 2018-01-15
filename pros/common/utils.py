@@ -1,8 +1,8 @@
 import logging
+import os
 import sys
 from functools import wraps
 from typing import *
-import os
 
 import click
 
@@ -58,6 +58,14 @@ def logger(obj: Union[str, object] = pros.__name__) -> logging.Logger:
     if isinstance(obj, str):
         return logging.getLogger(obj)
     return logging.getLogger(obj.__module__)
+
+
+def isdebug(obj: Union[str, object] = pros.__name__) -> bool:
+    if obj is None:
+        obj = pros.__name__
+    if isinstance(obj, str):
+        return logging.getLogger(obj).getEffectiveLevel() == logging.DEBUG
+    return logging.getLogger(obj.__module__).getEffectiveLevel() == logging.DEBUG
 
 
 def get_pros_dir():

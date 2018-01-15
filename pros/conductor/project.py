@@ -2,20 +2,26 @@ from pros.config.config import Config, ConfigNotFoundException
 import os.path
 
 
-class ProjectConfig(Config):
-    def __init__(self, path='.', create=False, raise_on_error=True):
-        file = ProjectConfig.find_project(path or '.')
+class Project(Config):
+    def __init__(self, path: str='.', create: bool=False, raise_on_error: bool=True, defaults: dict=None):
+        file = Project.find_project(path or '.')
         if file is None and create:
             file = os.path.join(path, 'project.pros')
         elif file is None and raise_on_error:
             raise ConfigNotFoundException('A project config was not found for {}'.format(path))
 
-        self.kernel = None  # kernel version
-        self.target = None  # VEX Hardware target (V5/Cortex)
-        self.libraries = {}
-        self.output = 'bin/output.bin'
-        self.upload_options = {}
-        super(ProjectConfig, self).__init__(file, error_on_decode=raise_on_error)
+        if defaults is None:
+            defaults = {}
+        self.kernel: str = defaults.get('kernel', None)  # kernel version
+        self.target: str = defaults.get('target', None)  # VEX Hardware target (V5/Cortex)
+        self.libraries = defaults.get('libraries', {})
+        self.output = defaults.get('output', 'bin/output.bin')
+        self.upload_options = defaults.get('upload_options', {})
+        super(Project, self).__init__(file, error_on_decode=raise_on_error)
+
+    @property
+    def location(self):
+        return os.path.dirname(self.save_file)
 
     @staticmethod
     def find_project(path):
