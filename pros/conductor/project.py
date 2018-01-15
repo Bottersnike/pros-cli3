@@ -13,15 +13,20 @@ class Project(Config):
         if defaults is None:
             defaults = {}
         self.kernel: str = defaults.get('kernel', None)  # kernel version
-        self.target: str = defaults.get('target', None)  # VEX Hardware target (V5/Cortex)
+        self.target: str = defaults.get('target', 'cortex').lower()  # VEX Hardware target (V5/Cortex)
         self.libraries = defaults.get('libraries', {})
         self.output = defaults.get('output', 'bin/output.bin')
         self.upload_options = defaults.get('upload_options', {})
+        self.project_name: str = defaults.get('project_name', None)
         super(Project, self).__init__(file, error_on_decode=raise_on_error)
 
     @property
     def location(self):
         return os.path.dirname(self.save_file)
+
+    @property
+    def name(self):
+        return self.project_name or os.path.basename(self.location) or os.path.basename(self.output) or 'pros'
 
     @staticmethod
     def find_project(path):

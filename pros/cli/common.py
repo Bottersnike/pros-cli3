@@ -3,6 +3,46 @@ import click.core
 from pros.common.utils import *
 
 
+def verbose_option(f):
+    def callback(ctx: click.Context, param: click.core.Parameter, value: Any):
+        if value is None:
+            return None
+        ctx.ensure_object(dict)
+        if isinstance(value, str):
+            value = getattr(logging, value.upper(), None)
+        if not isinstance(value, int):
+            raise ValueError('Invalid log level: {}'.format(value))
+        if value:
+            logger().setLevel(logging.INFO)
+            stdout_handler = ctx.obj['click_handler']  # type: logging.Handler
+            stdout_handler.setLevel(logging.INFO)
+            logger(__name__).info('Verbose messages enabled')
+        return value
+
+    return click.option('--verbose', help='Enable verbose output', is_flag=True, is_eager=True, expose_value=False,
+                        callback=callback)(f)
+
+
+def debug_option(f):
+    def callback(ctx: click.Context, param: click.core.Parameter, value: Any):
+        if value is None:
+            return None
+        ctx.ensure_object(dict)
+        if isinstance(value, str):
+            value = getattr(logging, value.upper(), None)
+        if not isinstance(value, int):
+            raise ValueError('Invalid log level: {}'.format(value))
+        if value:
+            logger().setLevel(logging.DEBUG)
+            stdout_handler = ctx.obj['click_handler']  # type: logging.Handler
+            stdout_handler.setLevel(logging.DEBUG)
+            logger(__name__).info('Debugging messages enabled')
+        return value
+
+    return click.option('--debug', help='Enable debugging output', is_flag=True, is_eager=True, expose_value=False,
+                        callback=callback)(f)
+
+
 def logging_option(f):
     def callback(ctx: click.Context, param: click.core.Parameter, value: Any):
         if value is None:
@@ -45,21 +85,6 @@ def logfile_option(f):
                         ))(f)
 
 
-def verbosity_option(f):
-    """
-    provides a wrapper for creating the verbosity option (so don't have to create callback, parameters, etc.)
-    """
-
-    def callback(ctx: click.Context, param: click.core.Parameter, value: Any):
-        ctx.ensure_object(dict)
-        ctx.obj[param.name] = value
-        logging.basicConfig(level=logging.INFO)
-        return value
-
-    return click.option('-v', '--verbose', count=True, expose_value=False, help='Sets log level to INFO',
-                        is_eager=True, callback=callback)(f)
-
-
 def machine_output_option(f):
     """
     provides a wrapper for creating the machine output option (so don't have to create callback, parameters, etc.)
@@ -80,7 +105,7 @@ def default_options(f):
     """
      combines verbosity, debug, machine output options (most commonly used)
     """
-    decorator = verbosity_option(logging_option(logfile_option(machine_output_option(f))))
+    decorator = debug_option(verbose_option(logging_option(logfile_option(machine_output_option(f)))))
     decorator.__name__ = f.__name__
     return decorator
 

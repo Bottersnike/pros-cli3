@@ -9,7 +9,7 @@ from pros.common.utils import retries
 import serial.tools.list_ports as list_ports
 
 
-def list_cortex_ports():
+def find_cortex_ports():
     return [p for p in list_ports.comports() if p.vid is not None and p.vid in [0x4D8, 0x67B]]
 
 

@@ -16,10 +16,12 @@ def main():
         pros_logger = logging.getLogger(pros.__name__)
         pros_logger.propagate = False
         click_handler = logging.StreamHandler()
+        click_handler.setLevel(logging.WARNING)
 
         formatter = logging.Formatter('%(levelname)s - %(name)s:%(funcName)s - %(message)s')
         click_handler.setFormatter(formatter)
         pros_logger.addHandler(click_handler)
+        pros_logger.setLevel(logging.WARNING)
         ctx_obj = {
             'click_handler': click_handler
         }

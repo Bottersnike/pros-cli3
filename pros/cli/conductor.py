@@ -13,7 +13,7 @@ def conductor_cli():
     pass
 
 
-@conductor_cli.group(cls=AliasGroup, aliases=['cond', 'c', 'conduct'],  short_help='Perform project management for PROS')
+@conductor_cli.group(cls=AliasGroup, aliases=['cond', 'c', 'conduct'], short_help='Perform project management for PROS')
 def conductor():
     pass
 
@@ -38,7 +38,7 @@ def apply(upgrade_ok: bool, install_ok: bool, download_ok: bool, project: str, t
     pass
 
 
-@conductor.command()
+@conductor.command(aliases=['i', 'in'])
 @click.option('--upgrade/--no-upgrade', 'upgrade_ok', default=False)
 @click.option('--download/--no-download', 'download_ok', default=True)
 @click.argument('project', default='.', type=click.Path())
@@ -70,9 +70,20 @@ def new(path: str, platform: str, version: str):
         pros.common.logger(__name__).error('A project already exists in this location! Delete it first')
         return -1
     project = c.Project(path=path, create=True, defaults={'platform': platform, 'version': version})
-    project.kernel_version = version
-    project.platform = platform
+    project.kernel = version
+    project.target = platform
     project.save()
-    click.echo('Created a new project at {} for {}'.format(os.path.abspath(project.location), project.platform))
+    click.echo('Created a new project at {} for {}'.format(os.path.abspath(project.location), project.target))
 
+
+@conductor.command('info-project')
+@click.argument('path', type=click.Path(exists=True))
+@default_options
+def info_project(path: str):
+    project_path = c.Project.find_project(path)
+    if project_path is None:
+        pros.common.logger(__name__).error('No project was found')
+        return -1
+    project = c.Project(path=project_path)
+    click.echo(project.__getstate__())
 

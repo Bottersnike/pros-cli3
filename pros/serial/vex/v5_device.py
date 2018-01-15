@@ -19,12 +19,13 @@ from .. import bytes_to_str
 int_str = Union[int, str]
 
 
-def find_v5_port(p_type: str):
+def find_v5_ports(p_type: str):
     location = ''
     if p_type.lower() == 'user':
         location = '2'
     elif p_type.lower() == 'system':
         location = '0'
+    logger(__name__).info('Searching for V5 COM ports...')
     return [p for p in list_ports.comports() if
             p.vid is not None and p.vid in [0x2888, 0x0501] and p.location.endswith(location)]
 
