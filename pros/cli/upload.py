@@ -52,10 +52,9 @@ def upload(target: str, file: str, port: str, name: str = None, slot: int = 1):
         else:
             port = ports[0].device
             logger(__name__).info('Automatically selected {}'.format(port))
-    target_str = target
+    click.echo('Uploading {} to {} device on {}'.format(file, target, port))
     if target == 'v5':
-        target_str = '{} as {}'.format(target, name)
-    logger(__name__).info('Uploading {} to {} ({})'.format(file, port, target_str))
+        click.echo('V5 program name: {}'.format(name))
     if not os.path.isfile(file) and file is not '-':
         logger(__name__).error('{} is not a valid file! Make sure it exists (e.g. by building your project)'.format(file))
         return -1

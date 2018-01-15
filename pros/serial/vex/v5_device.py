@@ -85,7 +85,11 @@ class V5Device(VEXDevice):
         ft_meta = self.ft_initialize(remote_file, function='upload', length=file_len, crc=crc32, **kwargs)
         assert ft_meta['file_size'] >= file_len
         transfer_size = min(ft_meta['file_size'], file_len)
-        with click.progressbar(length=transfer_size, label='Uploading {}'.format(remote_file)) as progress:
+        print(hasattr(file, 'name'))
+        display_name = remote_file
+        if hasattr(file, 'name'):
+            display_name = '{} ({})'.format(remote_file, file.name)
+        with click.progressbar(length=transfer_size, label='Uploading {}'.format(display_name)) as progress:
             for i in range(0, transfer_size, ft_meta['max_packet_size']):
                 packet_size = ft_meta['max_packet_size']
                 if i + ft_meta['max_packet_size'] > transfer_size:
