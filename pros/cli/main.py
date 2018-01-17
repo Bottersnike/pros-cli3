@@ -9,6 +9,7 @@ import pros.cli.test
 import pros.cli.upload
 from pros.common.utils import get_version
 from .common import default_options
+from .click_classes import *
 
 
 def main():
@@ -43,7 +44,7 @@ def version(ctx: click.Context, param, value):
 
 
 @click.command('pros',
-               cls=click.CommandCollection,
+               cls=PROSCommandCollection,
                sources=[pros.cli.build.build_cli,
                         pros.cli.terminal.terminal_cli,
                         pros.cli.upload.upload_cli,

@@ -5,15 +5,17 @@ import click
 
 import pros.common
 import pros.conductor as c
-from pros.cli.common import AliasGroup, default_options
+from pros.cli.common import default_options
+from pros.cli.click_classes import PROSGroup
 
 
-@click.group(cls=AliasGroup)
+@click.group(cls=PROSGroup)
 def conductor_cli():
     pass
 
 
-@conductor_cli.group(cls=AliasGroup, aliases=['cond', 'c', 'conduct'], short_help='Perform project management for PROS')
+@conductor_cli.group(cls=PROSGroup, aliases=['cond', 'c', 'conduct'], short_help='Perform project management for PROS')
+@default_options
 def conductor():
     pass
 
@@ -30,12 +32,17 @@ def download(name, version):
 @click.option('--upgrade/--no-upgrade', 'upgrade_ok', default=True)
 @click.option('--install/--no-install', 'install_ok', default=True)
 @click.option('--download/--no-download', 'download_ok', default=True)
-@click.argument('project', default='.', type=click.Path())
+@click.option('--upgrade-user-files/--no-upgrade-user-files', 'upgrade_user_files', default=False)
+@click.argument('path', default='.', type=click.Path())
 @click.argument('templates', nargs=-1)
 @default_options
-def apply(upgrade_ok: bool, install_ok: bool, download_ok: bool, project: str, templates: List[str]):
-    print(upgrade_ok, install_ok, download_ok, project, templates)
-    pass
+def apply(upgrade_ok: bool, install_ok: bool, download_ok: bool, path: str, templates: List[str],
+          upgrade_user_files: bool=False):
+    project_path = c.Project.find_project(path)
+    if project_path is None:
+        pros.common.logger(__name__).error('{} is not inside a PROS project'.format(path))
+        return -1
+    project = c.Project(project_path)
 
 
 @conductor.command(aliases=['i', 'in'])
@@ -77,7 +84,7 @@ def new(path: str, platform: str, version: str):
 
 
 @conductor.command('info-project')
-@click.argument('path', type=click.Path(exists=True))
+@click.argument('path', type=click.Path(exists=True), default='.', required=False)
 @default_options
 def info_project(path: str):
     project_path = c.Project.find_project(path)

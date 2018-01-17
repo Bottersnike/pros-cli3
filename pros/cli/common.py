@@ -1,6 +1,8 @@
 import click.core
 
+from pros.serial.vex import find_v5_ports, find_cortex_ports
 from pros.common.utils import *
+from .click_classes import *
 
 
 def verbose_option(f):
@@ -20,7 +22,7 @@ def verbose_option(f):
         return value
 
     return click.option('--verbose', help='Enable verbose output', is_flag=True, is_eager=True, expose_value=False,
-                        callback=callback)(f)
+                        callback=callback, cls=PROSOption, group='Standard Options')(f)
 
 
 def debug_option(f):
@@ -40,7 +42,7 @@ def debug_option(f):
         return value
 
     return click.option('--debug', help='Enable debugging output', is_flag=True, is_eager=True, expose_value=False,
-                        callback=callback)(f)
+                        callback=callback, cls=PROSOption, group='Standard Options')(f)
 
 
 def logging_option(f):
@@ -58,7 +60,8 @@ def logging_option(f):
         return value
 
     return click.option('-l', '--log', help='Logging level', is_eager=True, expose_value=False, callback=callback,
-                        type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']))(f)
+                        type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']),
+                        cls=PROSOption, group='Standard Options')(f)
 
 
 def logfile_option(f):
@@ -71,7 +74,7 @@ def logfile_option(f):
             level = getattr(logging, value[1].upper(), None)
         if not isinstance(level, int):
             raise ValueError('Invalid log level: {}'.format(value[1]))
-        handler = logging.StreamHandler(value[0])
+        handler = logging.FileHandler(value[0], mode='w')
         fmt_str = '%(name)s.%(funcName)s:%(levelname)s - %(asctime)s - %(message)s'
         handler.setFormatter(logging.Formatter(fmt_str))
         handler.setLevel(level)
@@ -81,8 +84,8 @@ def logfile_option(f):
     return click.option('--logfile', help='Log messages to a file', is_eager=True, expose_value=False,
                         callback=callback, default=(None, None),
                         type=click.Tuple(
-                            [click.File('a'), click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'])]
-                        ))(f)
+                            [click.Path(), click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'])]
+                        ), cls=PROSOption, group='Standard Options')(f)
 
 
 def machine_output_option(f):
@@ -96,7 +99,7 @@ def machine_output_option(f):
         return value
 
     decorator = click.option('--machine-output', expose_value=False, is_flag=True, default=False, is_eager=True,
-                             help='Enable machine friendly output.', callback=callback)(f)
+                             help='Enable machine friendly output.', callback=callback, cls=PROSOption, hidden=True)(f)
     decorator.__name__ = f.__name__
     return decorator
 
@@ -110,46 +113,19 @@ def default_options(f):
     return decorator
 
 
-class AliasGroup(click.Group):
-    def __init__(self, *args, **kwargs):
-        super(AliasGroup, self).__init__(*args, **kwargs)
-        self.cmd_dict = dict()
-
-    def command(self, *args, aliases=None, **kwargs):
-        aliases = aliases or []
-
-        def decorator(f):
-            for alias in aliases:
-                self.cmd_dict[alias] = f.__name__ if len(args) == 0 else args[0]
-            cmd = super(AliasGroup, self).command(*args, **kwargs)(f)
-            self.add_command(cmd)
-            return cmd
-
-        return decorator
-
-    def group(self, aliases=None, *args, **kwargs):
-        aliases = aliases or []
-
-        def decorator(f):
-            for alias in aliases:
-                self.cmd_dict[alias] = f.__name__
-            cmd = super(AliasGroup, self).group(*args, **kwargs)(f)
-            self.add_command(cmd)
-            return cmd
-
-        return decorator
-
-    def get_command(self, ctx, cmd_name):
-        # return super(AliasGroup, self).get_command(ctx, cmd_name)
-        suggestion = super(AliasGroup, self).get_command(ctx, cmd_name)
-        if suggestion is not None:
-            return suggestion
-        if cmd_name in self.cmd_dict:
-            return super(AliasGroup, self).get_command(ctx, self.cmd_dict[cmd_name])
-
-        # fall back to guessing
-        matches = {x for x in self.list_commands(ctx) if x.startswith(cmd_name)}
-        matches.union({x for x in self.cmd_dict.keys() if x.startswith(cmd_name)})
-        if len(matches) == 1:
-            return super(AliasGroup, self).get_command(ctx, matches.pop())
-        return None
+def resolve_v5_port(port: str, type: str) -> Optional[str]:
+    if not port:
+        ports = find_v5_ports(type)
+        if len(ports) == 0:
+            logger(__name__).error('No {0} ports were found! If you think you have a {0} plugged in, '
+                                   'run this command again with the --debug flag'.format('v5'))
+            return None
+        if len(ports) > 1:
+            port = click.prompt('Multiple {} ports were found. Please choose one: '.format('v5'),
+                                default=ports[0].device,
+                                type=click.Choice([p.device for p in ports]))
+            assert port in [p.device for p in ports]
+        else:
+            port = ports[0].device
+            logger(__name__).info('Automatically selected {}'.format(port))
+    return port

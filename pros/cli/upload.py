@@ -3,10 +3,11 @@ import serial.tools.list_ports as list_ports
 import pros.conductor as c
 from pros.serial.ports import SerialPort
 from pros.serial.vex import *
+from .click_classes import *
 from .common import *
 
 
-@click.group(cls=AliasGroup)
+@click.group(cls=PROSGroup)
 def upload_cli():
     pass
 

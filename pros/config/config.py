@@ -75,7 +75,7 @@ class Config(object):
         if os.path.isfile(self.save_file):
             os.remove(self.save_file)
 
-    def save(self, file=None):
+    def save(self, file: str = None) -> None:
         if file is None:
             file = self.save_file
         if pros.common.isdebug(__name__):

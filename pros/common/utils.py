@@ -68,5 +68,13 @@ def isdebug(obj: Union[str, object] = pros.__name__) -> bool:
     return logging.getLogger(obj.__module__).getEffectiveLevel() == logging.DEBUG
 
 
+def ismachineoutput(ctx: click.Context = None) -> bool:
+    if ctx is None:
+        ctx = click.get_current_context(silent=True)
+    ctx.ensure_object(dict)
+    assert isinstance(ctx.obj, dict)
+    return ctx.obj.get('machine_output', False)
+
+
 def get_pros_dir():
     return click.get_app_dir('PROS')
