@@ -14,7 +14,7 @@ def upload_cli():
 
 @upload_cli.command()
 @click.option('--target', type=click.Choice(['v5', 'cortex']), default=None, required=False,
-              help='Specify the target microcontroller. Overriden when a PROS project is specified.')
+              help='Specify the target microcontroller. Overridden when a PROS project is specified.')
 @click.argument('path', type=click.Path(exists=True), default=None, required=False)
 @click.argument('port', type=str, default=None, required=False)
 @click.option('--run-after/--no-run-after', 'run_after', default=True, help='Immediately run the uploaded program')
