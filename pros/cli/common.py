@@ -1,7 +1,7 @@
 import click.core
 
-from pros.serial.vex import find_v5_ports, find_cortex_ports
 from pros.common.utils import *
+from pros.serial.vex import find_cortex_ports, find_v5_ports
 from .click_classes import *
 
 
@@ -122,6 +122,24 @@ def resolve_v5_port(port: str, type: str) -> Optional[str]:
             return None
         if len(ports) > 1:
             port = click.prompt('Multiple {} ports were found. Please choose one: '.format('v5'),
+                                default=ports[0].device,
+                                type=click.Choice([p.device for p in ports]))
+            assert port in [p.device for p in ports]
+        else:
+            port = ports[0].device
+            logger(__name__).info('Automatically selected {}'.format(port))
+    return port
+
+
+def resolve_cortex_port(port: str) -> Optional[str]:
+    if not port:
+        ports = find_cortex_ports()
+        if len(ports) == 0:
+            logger(__name__).error('No {0} ports were found! If you think you have a {0} plugged in, '
+                                   'run this command again with the --debug flag'.format('cortex'))
+            return None
+        if len(ports) > 1:
+            port = click.prompt('Multiple {} ports were found. Please choose one: '.format('cortex'),
                                 default=ports[0].device,
                                 type=click.Choice([p.device for p in ports]))
             assert port in [p.device for p in ports]
