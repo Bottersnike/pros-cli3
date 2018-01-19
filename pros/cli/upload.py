@@ -108,7 +108,11 @@ def upload(path: str, port: str, **kwargs):
 
 def _print_ports(ports, header: Optional[str]=None):
     if header and not ismachineoutput():
-        print(header)
+        if len(ports) > 0:
+            print('{}:'.format(header))
+        else:
+            print('There are no connected {}'.format(header))
+            return
     if ismachineoutput():
         print([{'device': p.device, 'desc': p.description} for p in ports])
     else:
@@ -124,13 +128,13 @@ def _print_ports(ports, header: Optional[str]=None):
 def ls_usb(target):
     if target == 'v5' or target is None:
         ports = find_v5_ports('system')
-        _print_ports(ports, 'VEX EDR V5 System Ports:')
+        _print_ports(ports, 'VEX EDR V5 System Ports')
 
         ports = find_v5_ports('User')
-        _print_ports(ports, 'VEX EDR V5 User Ports:')
+        _print_ports(ports, 'VEX EDR V5 User Ports')
     if target == 'cortex' or target is None:
         ports = find_cortex_ports()
-        _print_ports(ports, 'VEX EDR Cortex Microcontroller Ports:')
+        _print_ports(ports, 'VEX EDR Cortex Microcontroller Ports')
 
     if isdebug():
         _print_ports(list_ports.comports())

@@ -6,7 +6,6 @@ from io import BytesIO, StringIO
 from typing import *
 
 import click
-import serial.tools.list_ports as list_ports
 
 from pros.common import *
 from pros.serial import decode_bytes_to_str
@@ -15,6 +14,7 @@ from .crc import CRC
 from .message import Message
 from .vex_device import VEXDevice
 from .. import bytes_to_str
+from ..ports.port import list_all_comports
 
 int_str = Union[int, str]
 
@@ -25,9 +25,7 @@ def find_v5_ports(p_type: str):
         locations = ['2']
     elif p_type.lower() == 'system':
         locations = ['0', '1']
-    logger(__name__).info('Searching for V5 COM ports...')
-    ports = list_ports.comports()
-    logger(__name__).debug(';'.join([str(p.__dict__) for p in ports]))
+    ports = list_all_comports()
     return [p for p in ports if
             p.vid is not None and p.vid in [0x2888, 0x0501] and any([p.location.endswith(l) for l in locations])]
 
