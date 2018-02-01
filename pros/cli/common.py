@@ -1,8 +1,44 @@
 import click.core
 
+import pros.conductor as c
 from pros.common.utils import *
 from pros.serial.vex import find_cortex_ports, find_v5_ports
 from .click_classes import *
+
+
+def template_arg(name, id_type=c.TemplateIdentifier, allow_multiple=False, **kwargs):
+    def callback(ctx: click.Context, param: click.core.Parameter, value: List[str]):
+        value = [v for v in value if v]
+        if allow_multiple:
+            specifiers = []
+            while len(value) > 0:
+                v = value.pop(0)
+                try:
+                    specifiers.append(id_type(v))
+                except ValueError:
+                    if len(value) > 0:
+                        v = [v, value.pop(0)]
+                        try:
+                            specifiers.append(id_type(*v))
+                        except ValueError:
+                            raise ValueError('Could not create a template ID for {}@{}'.format(*v))
+                    else:
+                        raise ValueError('Could not create a template ID for {}'.format(v))
+            return specifiers
+        else:
+            if len(value) == 1:
+                return id_type(value[0])
+            elif len(value) == 2:
+                try:
+                    id_type(value[0])
+                except ValueError:
+                    return id_type(*value)
+            raise ValueError('Only one template ID is allowed here.')
+
+    def wrapper(f):
+        return click.argument(name, nargs=-1, callback=callback, **kwargs)(f)
+
+    return wrapper
 
 
 def verbose_option(f):

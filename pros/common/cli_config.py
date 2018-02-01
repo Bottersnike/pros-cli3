@@ -1,12 +1,11 @@
 import os.path
-import sys
 from typing import *
 
 import click
 
-import pros.conductor.providers.github_releases as githubreleases
+from pros.conductor.templates.template import Template
+# import pros.conductor.providers.github_releases as githubreleases
 from pros.config.config import Config
-from pros.conductor import Template
 
 
 class CliConfig(Config):
@@ -20,7 +19,17 @@ class CliConfig(Config):
         super(CliConfig, self).__init__(file)
 
     def reset_providers(self):
-        if os.path.isfile(githubreleases.__file__):
-            self.providers = [githubreleases.__file__]
-        elif hasattr(sys, 'frozen'):
-            self.providers = [os.path.join(os.path.dirname(sys.executable), 'githubreleases.pyc')]
+        pass
+        # if os.path.isfile(githubreleases.__file__):
+        #     self.providers = [githubreleases.__file__]
+        # elif hasattr(sys, 'frozen'):
+        #     self.providers = [os.path.join(os.path.dirname(sys.executable), 'githubreleases.pyc')]
+
+
+def cli_config() -> CliConfig:
+    ctx = click.get_current_context(silent=True)
+    ctx.ensure_object(dict)
+    assert isinstance(ctx.obj, dict)
+    if not hasattr(ctx.obj, 'cli_config') or not isinstance(ctx.obj['cli_config'], CliConfig):
+        ctx.obj['cli_config'] = CliConfig()
+    return ctx.obj['cli_config']
