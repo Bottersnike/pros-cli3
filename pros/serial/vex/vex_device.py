@@ -8,7 +8,7 @@ from pros.common import *
 from . import comm_error
 from .message import Message
 from .. import bytes_to_str
-from ..ports import Port
+from ..ports import BasePort
 
 
 def debug(msg):
@@ -19,7 +19,7 @@ class VEXDevice(object):
     ACK_BYTE = 0x76
     NACK_BYTE = 0xFF
 
-    def __init__(self, port: Union[Serial, Port]):
+    def __init__(self, port: Union[Serial, BasePort]):
         self.port = port
         # if not self.port.is_open:
         #     self.port.open()

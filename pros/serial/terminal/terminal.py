@@ -9,7 +9,7 @@ import colorama
 
 from pros.common.utils import logger
 from pros.serial import decode_bytes_to_str
-from pros.serial.ports import PacketPort, Port
+from pros.serial.ports import BasePort
 
 
 # This file is a modification of the miniterm implementation on pyserial
@@ -168,7 +168,7 @@ else:
 class Terminal(object):
     """This class is loosely based off of the pyserial miniterm"""
 
-    def __init__(self, port_instance: Port, transformations=(),
+    def __init__(self, port_instance: BasePort, transformations=(),
                  output_raw=False):
         self.serial = port_instance
         self.transformations = transformations
@@ -211,28 +211,17 @@ class Terminal(object):
             logger(__name__).exception(e)
         try:
             while not self.alive.is_set() and self._reader_alive:
-                data = bytearray()
-                if isinstance(self.serial, PacketPort):
-                    data = self.serial.read_packet()
+                data = self.serial.read()
+                if data[0] == b'sout':
+                    text = decode_bytes_to_str(data[1])
+                elif data[0] == b'kdbg':
+                    text = '{}\n\nKERNEL DEBUG:\t{}{}\n'.format(colorama.Back.GREEN + colorama.Style.BRIGHT,
+                                                                decode_bytes_to_str(data[1]),
+                                                                colorama.Style.RESET_ALL)
                 else:
-                    data.extend(self.serial.read(1))
-                    data.extend(self.serial.read_all())
-                if data:
-                    if isinstance(self.serial, PacketPort):
-                        if data[0] == b'sout':
-                            text = decode_bytes_to_str(data[1])
-                        elif data[0] == b'kdbg':
-                            text = '{}\n\nKERNEL DEBUG:\t{}{}\n'.format(colorama.Back.GREEN + colorama.Style.BRIGHT,
-                                                                        decode_bytes_to_str(data[1]),
-                                                                        colorama.Style.RESET_ALL)
-                        else:
-                            text = '{}:{}'.format(decode_bytes_to_str(data[0]),
-                                                  decode_bytes_to_str(data[1]))
-                    else:
-                        text = decode_bytes_to_str(data)
-                    for transformation in self.transformations:
-                        text = transformation(text)
-                    self.console.write(text)
+                    text = '{}:{}'.format(decode_bytes_to_str(data[0]),
+                                          decode_bytes_to_str(data[1]))
+                self.console.write(text)
         except UnicodeError as e:
             logger(__name__).exception(e)
         except Exception as e:
