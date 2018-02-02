@@ -84,14 +84,15 @@ if os.name == 'nt':  # noqa
             self._saved_icp = ctypes.windll.kernel32.GetConsoleCP()
             ctypes.windll.kernel32.SetConsoleOutputCP(65001)
             ctypes.windll.kernel32.SetConsoleCP(65001)
-            self.output = codecs.getwriter('UTF-8')(Out(sys.stdout.fileno()),
-                                                    'replace')
+            self.output = sys.stdout
+            # self.output = codecs.getwriter('UTF-8')(Out(sys.stdout.fileno()),
+            #                                         'replace')
             # the change of the code page is not propagated to Python,
             # manually fix it
-            sys.stderr = codecs.getwriter('UTF-8')(Out(sys.stderr.fileno()),
-                                                   'replace')
+            # sys.stderr = codecs.getwriter('UTF-8')(Out(sys.stderr.fileno()),
+            #                                        'replace')
             sys.stdout = self.output
-            self.output.encoding = 'UTF-8'  # needed for input
+            # self.output.encoding = 'UTF-8'  # needed for input
 
         def __del__(self):
             ctypes.windll.kernel32.SetConsoleOutputCP(self._saved_ocp)
@@ -180,6 +181,7 @@ class Terminal(object):
         self.no_sigint = True  # SIGINT flag
         signal.signal(signal.SIGINT, self.catch_sigint)  # SIGINT handler
         self.console = Console()
+        self.console.output = colorama.AnsiToWin32(self.console.output).stream
 
     def _start_rx(self):
         self._reader_alive = True
@@ -205,7 +207,7 @@ class Terminal(object):
 
     def reader(self):
         try:
-            self.serial.write('pRb')
+            self.serial.write(b'pRb')
         except Exception as e:
             logger(__name__).exception(e)
         try:
@@ -213,6 +215,8 @@ class Terminal(object):
                 data = self.serial.read()
                 if data[0] == b'sout':
                     text = decode_bytes_to_str(data[1])
+                elif data[0] == b'serr':
+                    text = '{}{}{}'.format(colorama.Fore.RED, decode_bytes_to_str(data[1]), colorama.Style.RESET_ALL)
                 elif data[0] == b'kdbg':
                     text = '{}\n\nKERNEL DEBUG:\t{}{}\n'.format(colorama.Back.GREEN + colorama.Style.BRIGHT,
                                                                 decode_bytes_to_str(data[1]),
@@ -261,8 +265,8 @@ class Terminal(object):
         self.no_sigint = False
 
     def start(self):
-        colorama.deinit()
-        colorama.init(autoreset=True)
+        # colorama.deinit()
+        # colorama.init(autoreset=True)
         self.alive.clear()
         self._start_rx()
         self._start_tx()
