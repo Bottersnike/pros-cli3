@@ -60,7 +60,7 @@ class VEXDevice(object):
         response_header_stack = list(response_header)
         rx = bytearray()
         while (len(rx) > 0 or time.time() - start_time < timeout) and len(response_header_stack) > 0:
-            b = self.port.read(1)[0]
+            b = self.port.read(1)[1][0]
             if b == response_header_stack[0]:
                 response_header_stack.pop(0)
                 rx.append(b)
@@ -70,15 +70,15 @@ class VEXDevice(object):
                 rx = bytearray()
         if not rx == bytearray(response_header):
             raise IOError("Couldn't find the response header in the device response")
-        rx.extend(self.port.read(1))
+        rx.extend(self.port.read(1)[1])
         command = rx[-1]
-        rx.extend(self.port.read(1))
+        rx.extend(self.port.read(1)[1])
         payload_length = rx[-1]
         if command == 0x56 and (payload_length & 0x80) == 0x80:
             logger(__name__).debug('Found an extended message payload')
-            rx.extend(self.port.read(1))
+            rx.extend(self.port.read(1)[1])
             payload_length = ((payload_length & 0x7f) << 8) + rx[-1]
-        payload = self.port.read(payload_length)
+        payload = self.port.read(payload_length)[1]
         rx.extend(payload)
         return {
             'command': command,

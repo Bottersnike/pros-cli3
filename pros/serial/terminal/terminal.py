@@ -3,7 +3,6 @@ import os
 import signal
 import sys
 import threading
-import time
 
 import colorama
 
@@ -218,9 +217,11 @@ class Terminal(object):
                     text = '{}\n\nKERNEL DEBUG:\t{}{}\n'.format(colorama.Back.GREEN + colorama.Style.BRIGHT,
                                                                 decode_bytes_to_str(data[1]),
                                                                 colorama.Style.RESET_ALL)
+                elif data[0] != b'':
+                    text = '{}{}'.format(decode_bytes_to_str(data[0]),
+                                         decode_bytes_to_str(data[1]))
                 else:
-                    text = '{}:{}'.format(decode_bytes_to_str(data[0]),
-                                          decode_bytes_to_str(data[1]))
+                    text = "{}".format(decode_bytes_to_str(data[1]))
                 self.console.write(text)
         except UnicodeError as e:
             logger(__name__).exception(e)

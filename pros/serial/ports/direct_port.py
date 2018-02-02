@@ -45,13 +45,13 @@ class DirectPort(BasePort):
             self.buffer.extend(self.serial.read_all())
             msg = bytes(self.buffer)
             self.buffer = bytearray()
-            return msg
+            return b'', msg
         else:
             if len(self.buffer) < n_bytes:
                 self.buffer.extend(self.serial.read(n_bytes - len(self.buffer)))
             msg = bytes(self.buffer[:n_bytes])
             self.buffer = self.buffer[n_bytes:]
-            return msg
+            return b'', msg
 
     def read(self, n_bytes: int = 0):
         return self.decoder(n_bytes)
