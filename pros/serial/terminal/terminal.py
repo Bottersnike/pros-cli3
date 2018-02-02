@@ -213,6 +213,8 @@ class Terminal(object):
         try:
             while not self.alive.is_set() and self._reader_alive:
                 data = self.serial.read()
+                if not data:
+                    continue
                 if data[0] == b'sout':
                     text = decode_bytes_to_str(data[1])
                 elif data[0] == b'serr':
@@ -272,7 +274,7 @@ class Terminal(object):
         self._start_tx()
 
     def stop(self):
-        logger(__name__).info('Stopping terminal')
+        logger(__name__).warning('Stopping terminal')
         self.alive.set()
         logger(__name__).info('Destroying port')
         self.serial.destroy()
@@ -292,4 +294,3 @@ class Terminal(object):
                 self.transmitter_thread.join()
         except:
             self.stop()
-        self.stop()

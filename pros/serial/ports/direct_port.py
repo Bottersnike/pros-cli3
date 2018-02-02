@@ -28,16 +28,15 @@ class DirectPort(BasePort):
 
     def _cobs_read(self, n_bytes: int = -1) -> Tuple[bytes, bytes]:
         assert isinstance(self.buffer, list)
-        while len(self.buffer) == 0:
+        if len(self.buffer) == 0:
+            if b'\0' not in self.temp_buffer:
+                self.temp_buffer.extend(self.serial.read(1))
+                self.temp_buffer.extend(self.serial.read(-1))
             if b'\0' in self.temp_buffer:
                 msg, self.temp_buffer = self.temp_buffer.split(b'\0', 1)
                 msg = cobs.decode(msg)
                 self.buffer.append((msg[:4], msg[4:]))
-                break
-
-            self.temp_buffer.extend(self.serial.read(1))
-            self.temp_buffer.extend(self.serial.read(-1))
-        return self.buffer.pop(0)
+        return self.buffer.pop(0) if len(self.buffer) > 0 else None
 
     def _raw_read(self, n_bytes: int = 0):
         assert isinstance(self.buffer, bytearray)
@@ -51,7 +50,7 @@ class DirectPort(BasePort):
                 self.buffer.extend(self.serial.read(n_bytes - len(self.buffer)))
             msg = bytes(self.buffer[:n_bytes])
             self.buffer = self.buffer[n_bytes:]
-            return b'', msg
+            return b'', msg if len(msg) > 0 else None
 
     def read(self, n_bytes: int = 0):
         return self.decoder(n_bytes)

@@ -1,5 +1,6 @@
 import os
 import signal
+import time
 
 import click
 
@@ -9,6 +10,7 @@ import pros.serial.vex.cortex_device as cortex_device
 import pros.serial.vex.v5_device as v5_device
 from pros.common.utils import logger
 from pros.serial.terminal import Terminal
+from .common import default_options
 
 
 @click.group()
@@ -17,6 +19,7 @@ def terminal_cli():
 
 
 @terminal_cli.command()
+@default_options
 @click.argument('port', default='default')
 @click.option('--backend', type=click.Choice(['share', 'solo']), default='solo',
               help='Backend port of the terminal. See above for details')
@@ -65,8 +68,10 @@ def terminal(port: str, backend: str, **kwargs):
         if not kwargs['raw']:
             ser.config('cobs', True)
     term = Terminal(ser)
+
     signal.signal(signal.SIGINT, term.stop)
     term.start()
+    while not term.alive.is_set():
+        time.sleep(0.005)
     term.join()
     logger(__name__).info('CLI Main Thread Dying')
-    os._exit(0)  # _exit(0) so that SerialShareBridge may continue running
