@@ -3,7 +3,7 @@ from typing import *
 
 import click
 
-from pros.conductor.templates.template import Template
+from pros.conductor.templates.base_template import BaseTemplate
 # import pros.conductor.providers.github_releases as githubreleases
 from pros.config.config import Config
 
@@ -14,7 +14,7 @@ class CliConfig(Config):
             file = os.path.join(click.get_app_dir('PROS'), 'cli.pros')
         self.default_libraries = []  # type: List[str]
         self.providers = []  # type: List[str]
-        self.templates = []  # type: List[Template]
+        self.templates = []  # type: List[BaseTemplate]
 
         super(CliConfig, self).__init__(file)
 

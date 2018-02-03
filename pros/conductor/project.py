@@ -17,7 +17,7 @@ class Project(Config):
             defaults = {}
         self.kernel: str = defaults.get('kernel', None)  # kernel version
         self.target: str = defaults.get('target', 'cortex').lower()  # VEX Hardware target (V5/Cortex)
-        self.libraries = defaults.get('libraries', [])  # type: List[Template]
+        self.templates = defaults.get('templates', [])  # type: List[Template]
         self.output = defaults.get('output', 'bin/output.bin')  # type: str
         self.upload_options = defaults.get('upload_options', {})
         self.project_name: str = defaults.get('project_name', None)
@@ -34,7 +34,7 @@ class Project(Config):
     def template_is_installed(self, template: Template) -> bool:
         if template.name == 'kernel':
             return True
-        for lib in self.libraries:
+        for lib in self.templates:
             if lib.name == template.name:
                 return lib
         return False
@@ -43,12 +43,21 @@ class Project(Config):
         if template.name == 'kernel':
             self.kernel = template.version
         else:
-            for lib in self.libraries:
+            for lib in self.templates:
                 if lib.name == template.name:
-                    self.libraries.remove(lib)
+                    self.templates.remove(lib)
                     break
-            self.libraries.append(template)
+            self.templates.append(template)
         self.save()
+
+    def list_template_files(self, include_install: bool=True, include_user: bool=True) -> List[str]:
+        files = []
+        for t in self.templates:
+            if include_install:
+                files.extend(t.install_files)
+            if include_user:
+                files.extend(t.user_files)
+        return files
 
     @staticmethod
     def find_project(path):

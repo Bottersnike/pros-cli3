@@ -5,8 +5,10 @@ import click
 
 import pros.common
 import pros.conductor as c
+from pros.conductor.templates import ExternalTemplate
 from pros.cli.common import default_options
 from pros.cli.click_classes import PROSGroup
+from pros.common.utils import logger
 
 
 @click.group(cls=PROSGroup)
@@ -20,12 +22,27 @@ def conductor():
     pass
 
 
-@conductor.command()
-@click.argument('name')
-@click.argument('version', default='latest')
+@conductor.command(aliases=['download'], short_help='Fetch/Download a remote template',
+                   context_settings={'allow_extra_args': True, 'ignore_unknown_options': True})
+@click.argument('spec')
+@click.option('--depot', default=None)
+@click.option('--destination', type=click.Path(file_okay=False))
 @default_options
-def download(name, version):
-    pass
+@click.pass_context
+def fetch(ctx, spec, depot, destination):
+    extra_args = {ctx.args[i][2:]: ctx.args[i + 1] for i in range(0, len(ctx.args), 2)}
+    if depot == 'local':
+        if 'location' not in extra_args:
+            logger(__name__).error('Location must be specified when using local depot.')
+            return -1
+        template = ExternalTemplate(file=extra_args['location']) # blank template since we don't care
+        print(template.identifier)
+        depot = c.LocalDepot()
+    else:
+        # TODO: implement selecting a template
+        template = None
+        depot = None
+    c.Conductor().fetch_template(depot, template, **extra_args)
 
 
 @conductor.command()

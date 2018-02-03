@@ -3,7 +3,7 @@ import logging
 import click
 
 import pros.cli.build
-import pros.cli.conductor
+import pros.cli.conductor, pros.cli.conductor_utils
 import pros.cli.terminal
 import pros.cli.test
 import pros.cli.upload
