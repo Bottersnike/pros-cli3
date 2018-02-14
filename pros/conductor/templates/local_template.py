@@ -6,12 +6,6 @@ class LocalTemplate(Template):
         self.location: str = None
         super().__init__(**kwargs)
 
-    def apply(self, target_path: str, replace_all: bool = False):
-        pass
-
-    def uninstall(self, target_path: str):
-        pass
-
     def __hash__(self):
         return self.identifier.__hash__()
 
