@@ -3,13 +3,25 @@ import logging
 import click
 
 import pros.cli.build
-import pros.cli.conductor, pros.cli.conductor_utils
+import pros.cli.conductor
+import pros.cli.conductor_utils
 import pros.cli.terminal
 import pros.cli.upload
 import pros.cli.v5_utils
-from pros.common.utils import get_version
+from pros.common.utils import get_version, isdebug
 from .click_classes import *
 from .common import default_options
+
+
+class ClickLogFormatter(logging.Formatter):
+    """
+    A subclass of the logging.Formatter so that we can print exception traces ONLY if we're in debug mode
+    """
+    def formatException(self, ei):
+        if not isdebug():
+            return ''
+        else:
+            return super().formatException(ei)
 
 
 def main():
@@ -19,7 +31,7 @@ def main():
         click_handler = logging.StreamHandler()
         click_handler.setLevel(logging.WARNING)
 
-        formatter = logging.Formatter('%(levelname)s - %(name)s:%(funcName)s - %(message)s')
+        formatter = ClickLogFormatter('%(levelname)s - %(name)s:%(funcName)s - %(message)s')
         click_handler.setFormatter(formatter)
         pros_logger.addHandler(click_handler)
         pros_logger.setLevel(logging.WARNING)

@@ -9,12 +9,12 @@ import click
 
 from pros.common import *
 from pros.serial import decode_bytes_to_str
+from pros.serial.ports import list_all_comports
 from .comm_error import VEXCommError
 from .crc import CRC
 from .message import Message
 from .vex_device import VEXDevice
 from .. import bytes_to_str
-from pros.serial.ports import list_all_comports
 
 int_str = Union[int, str]
 
@@ -23,11 +23,32 @@ def find_v5_ports(p_type: str):
     locations = []
     if p_type.lower() == 'user':
         locations = ['2']
+        device_suffix = '3'
+        names = ['User']
     elif p_type.lower() == 'system':
         locations = ['0', '1']
+        device_suffix = '1'
+        names = ['System', 'Communications']
+    else:
+        raise ValueError()
     ports = list_all_comports()
-    return [p for p in ports if
-            p.vid is not None and p.vid in [0x2888, 0x0501] and any([p.location.endswith(l) for l in locations])]
+    candidates = [p for p in ports if
+                  p.vid is not None and p.vid in [0x2888, 0x0501] and
+                  any([p.location.endswith(l) for l in locations])]
+    if len(candidates) > 0:
+        return candidates
+    candidates = [p for p in ports if
+                  p.vid is not None and p.vid in [0x2888, 0x0501] and
+                  p.name is not None and (p.name.contains('VEX') or p.name.contains('V5')) and
+                  any(p.name.contains(name) for name in names)]
+    if len(candidates) > 0:
+        return candidates
+    candidates = [p for p in ports if
+                  p.vid is not None and p.vid in [0x2888, 0x0501] and
+                  p.device.endswith(device_suffix)]
+    if len(candidates) > 0:
+        return candidates
+    return []
 
 
 class V5Device(VEXDevice):
@@ -38,8 +59,8 @@ class V5Device(VEXDevice):
     def write_program(self, file: typing.BinaryIO, remote_base: str, ini: ConfigParser = None, slot: int = 0,
                       file_len: int = -1, run_after: bool = False, target: str = 'flash', **kwargs):
         if target == 'ddr':
-            self.write_program(file, '{}.bin'.format(remote_base), file_len=file_len, type='bin',
-                               target='ddr', **kwargs)
+            self.write_file(file, '{}.bin'.format(remote_base), file_len=file_len, type='bin',
+                            target='ddr', run_after=run_after, **kwargs)
             return
         if not isinstance(ini, ConfigParser):
             ini = ConfigParser()

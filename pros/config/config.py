@@ -40,8 +40,9 @@ class Config(object):
                                 self.__dict__.update(result)
                         elif isinstance(result, object):
                             self.__dict__.update(result.__dict__)
-                    except (json.decoder.JSONDecodeError, AttributeError) as e:
+                    except (json.decoder.JSONDecodeError, AttributeError, UnicodeDecodeError) as e:
                         if error_on_decode:
+                            logger(__name__).error(f'Error parsing {file}')
                             logger(__name__).exception(e)
                             raise e
                         else:
@@ -70,6 +71,10 @@ class Config(object):
 
     def __setstate__(self, state):
         self.__dict__.update(state)
+
+    def __str__(self):
+        jsonpickle.set_encoder_options('json', sort_keys=True)
+        return jsonpickle.encode(self)
 
     def delete(self):
         if os.path.isfile(self.save_file):
