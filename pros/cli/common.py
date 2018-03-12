@@ -153,7 +153,7 @@ def project_option(arg_name='project', required: bool = True, default='.'):
     return wrapper
 
 
-def resolve_v5_port(port: str, type: str) -> Optional[str]:
+def resolve_v5_port(port: Optional[str], type: str) -> Optional[str]:
     if not port:
         ports = find_v5_ports(type)
         if len(ports) == 0:
@@ -171,7 +171,7 @@ def resolve_v5_port(port: str, type: str) -> Optional[str]:
     return port
 
 
-def resolve_cortex_port(port: str) -> Optional[str]:
+def resolve_cortex_port(port: Optional[str]) -> Optional[str]:
     if not port:
         ports = find_cortex_ports()
         if len(ports) == 0:
