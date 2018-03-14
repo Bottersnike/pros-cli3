@@ -1,11 +1,31 @@
+import json
+
 from click._termui_impl import ProgressBar as _click_ProgressBar
 
 from .utils import *
 
-import json
-
 _last_notify_value = 0
 _current_notify_value = 0
+
+
+def _machineoutput(obj: Dict[str, Any]):
+    print(f'Uc&42BWAaQ{json.dumps(obj)}')
+
+
+def _machine_notify(method: str, obj: Dict[str, Any], notify_value: Optional[int]):
+    if notify_value is None:
+        global _current_notify_value
+        notify_value = _current_notify_value
+    obj['type'] = f'notify/{method}'
+    obj['notify_value'] = notify_value
+    _machineoutput(obj)
+
+
+def echo(text: str, err: bool = False, nl: bool = True, notify_value: int = None):
+    if ismachineoutput():
+        return _machine_notify('echo', {'text': text + ('\n' if nl else '')}, notify_value)
+    else:
+        return click.echo(text, nl=nl, err=err)
 
 
 def confirm(text, default=False, abort=False, prompt_suffix=': ',
@@ -30,21 +50,6 @@ def prompt(text, default=None, hide_input=False,
                             err=err)
 
 
-def echo(text: str, err: bool = False, nl: bool = True, notify_value: int = None):
-    if ismachineoutput():
-        if notify_value is None:
-            global _current_notify_value
-            notify_value = _current_notify_value
-        obj = {
-            'type': 'notify/echo',
-            'notify_value': notify_value,
-            'text': text + ('\n' if nl else '')
-        }
-        return print(f'Uc&42BWAaQ{json.dumps(obj)}')
-    else:
-        return click.echo(text, nl=nl, err=err)
-
-
 def progressbar(iterable: Iterable = None, length: int = None, label: str = None, show_eta: bool = True,
                 show_percent: bool = True, show_pos: bool = False, item_show_func: Callable = None,
                 fill_char: str = '#', empty_char: str = '-', bar_template: str = '%(label)s [%(bar)s] %(info)s',
@@ -58,13 +63,19 @@ def progressbar(iterable: Iterable = None, length: int = None, label: str = None
 class _MachineOutputProgessBar(_click_ProgressBar):
     def __init__(self, *args, **kwargs):
         global _current_notify_value
-        kwargs['file'] = os.devnull
+        kwargs['file'] = open(os.devnull, 'w')
         self.notify_value = kwargs.pop('notify_value', _current_notify_value)
         super(_MachineOutputProgessBar, self).__init__(*args, **kwargs)
 
+    def __del__(self):
+        self.file.close()
+
     def render_progress(self):
         super(_MachineOutputProgessBar, self).render_progress()
-        # TODO Print progress
+        obj = {'label': self.label, 'pct': self.pct}
+        if self.show_eta and self.eta_known and not self.finished:
+            obj['eta'] = self.eta
+        _machine_notify('progress', obj, self.notify_value)
 
 
 class Notification(object):
