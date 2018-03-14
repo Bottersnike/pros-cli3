@@ -96,3 +96,37 @@ class Notification(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         global _current_notify_value
         _current_notify_value = self.old_notify_values.pop()
+
+
+class PROSLogFormatter(logging.Formatter):
+    """
+    A subclass of the logging.Formatter so that we can print full exception traces ONLY if we're in debug mode
+    """
+
+    def formatException(self, ei):
+        if not isdebug():
+            return '\n'.join(super().formatException(ei).split('\n')[-3:])
+        else:
+            return super().formatException(ei)
+
+
+class PROSLogHandler(logging.StreamHandler):
+    """
+    A subclass of logging.StreamHandler so that we can correctly encapsulate logging messages
+    """
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            if ismachineoutput():
+                obj = {
+                    'type': 'log/message',
+                    'level': record.levelname,
+                    'message': msg
+                }
+                msg = f'Uc&42BWAaQ{json.dumps(obj)}'
+            stream = self.stream
+            stream.write(msg)
+            stream.write(self.terminator)
+            self.flush()
+        except Exception:
+            self.handleError(record)

@@ -9,31 +9,21 @@ import pros.cli.terminal
 import pros.cli.upload
 import pros.cli.v5_utils
 import pros.cli.test
-from pros.common.utils import get_version, isdebug, logger
+import pros.common.ui as ui
+from pros.common.utils import get_version, logger
 from .click_classes import *
 from .common import default_options
-
-
-class ClickLogFormatter(logging.Formatter):
-    """
-    A subclass of the logging.Formatter so that we can print full exception traces ONLY if we're in debug mode
-    """
-
-    def formatException(self, ei):
-        if not isdebug():
-            return '\n'.join(super().formatException(ei).split('\n')[-3:])
-        else:
-            return super().formatException(ei)
 
 
 def main():
     try:
         pros_logger = logging.getLogger(pros.__name__)
         pros_logger.propagate = False
-        click_handler = logging.StreamHandler()
+        click_handler = ui.PROSLogHandler()
+        # click_handler = logging.StreamHandler()
         click_handler.setLevel(logging.WARNING)
 
-        formatter = ClickLogFormatter('%(levelname)s - %(name)s:%(funcName)s - %(message)s')
+        formatter = ui.PROSLogFormatter('%(levelname)s - %(name)s:%(funcName)s - %(message)s')
         click_handler.setFormatter(formatter)
         pros_logger.addHandler(click_handler)
         pros_logger.setLevel(logging.WARNING)
