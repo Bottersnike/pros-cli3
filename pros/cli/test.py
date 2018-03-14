@@ -24,7 +24,7 @@ def test():
         ui.echo('Yet another box')
         with ui.progressbar(range(20)) as bar:
             for _ in bar:
-                time.sleep(0.25)
+                time.sleep(0.1)
     ui.echo('Back again bitches')
 
     logger(__name__).warning('Hello')
@@ -32,5 +32,7 @@ def test():
         raise Exception('Hey')
     except Exception as e:
         logger(__name__).exception(e)
+
+    ui.finalize({'hello': 'world'}, human_prefix='Created ')
 
 

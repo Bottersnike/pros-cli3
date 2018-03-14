@@ -4,6 +4,7 @@ import pros.common as p
 import pros.conductor as c
 from pros.cli.common import *
 from pros.conductor.templates import ExternalTemplate
+import pros.common.ui as ui
 
 
 @click.group(cls=PROSGroup)
@@ -181,17 +182,25 @@ def query_templates(ctx, query: c.BaseTemplate, allow_offline: bool, allow_onlin
         limit = 15
     templates = c.Conductor().resolve_templates(query, allow_offline=allow_offline, allow_online=allow_online,
                                                 force_refresh=force_refresh)[:limit]
-    if ismachineoutput(ctx):
-        import jsonpickle
-        if isdebug(__name__):
-            jsonpickle.set_encoder_options('json', sort_keys=True)
-        click.echo(jsonpickle.encode(templates, unpicklable=False))
-    else:
-        import tabulate
-        templates = [
-            (t.name, t.version, t.metadata.get('origin', 'Unknown'), 'yes' if isinstance(t, c.LocalTemplate) else 'no')
-            for t in templates]
-        click.echo(tabulate.tabulate(templates, headers=('Name', 'Version', 'Origin', 'Local')))
+
+    render_templates = {}
+    for template in templates:
+        key = (template.identifier, template.origin)
+        if key in render_templates:
+            if isinstance(template, c.LocalTemplate):
+                render_templates[key]['local'] = True
+        else:
+            render_templates[key] = {
+                'name': template.name,
+                'version': template.version,
+                'location': template.origin,
+                'local': isinstance(template, c.LocalTemplate)
+            }
+    import semantic_version as semver
+    render_templates = sorted(render_templates.values(), key=lambda k: k['local'])  # tertiary key
+    render_templates = sorted(render_templates, key=lambda k: semver.Version(k['version']), reverse=True)  # secondary key
+    render_templates = sorted(render_templates, key=lambda k: k['name'])  # primary key
+    ui.finalize(render_templates)
 
 
 @conductor.command('info-project')

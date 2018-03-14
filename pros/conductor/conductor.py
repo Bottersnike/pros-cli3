@@ -31,7 +31,7 @@ class Conductor(Config):
 
     def fetch_template(self, depot: Depot, template: BaseTemplate, **kwargs) -> LocalTemplate:
         for t in list(self.local_templates):
-            if t.name == template.name:
+            if t.identifier == template.identifier:
                 self.remove_template(t)
 
         if 'destination' in kwargs:  # this is deprecated, will work (maybe) but not desirable behavior

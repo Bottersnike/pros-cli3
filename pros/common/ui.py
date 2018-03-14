@@ -21,11 +21,11 @@ def _machine_notify(method: str, obj: Dict[str, Any], notify_value: Optional[int
     _machineoutput(obj)
 
 
-def echo(text: str, err: bool = False, nl: bool = True, notify_value: int = None):
+def echo(text: str, err: bool = False, nl: bool = True, notify_value: int = None, color: Any = None):
     if ismachineoutput():
         return _machine_notify('echo', {'text': text + ('\n' if nl else '')}, notify_value)
     else:
-        return click.echo(text, nl=nl, err=err)
+        return click.echo(text, nl=nl, err=err, color=color)
 
 
 def confirm(text, default=False, abort=False, prompt_suffix=': ',
@@ -59,6 +59,40 @@ def progressbar(iterable: Iterable = None, length: int = None, label: str = None
     else:
         return click.progressbar(**locals())
 
+
+def finalize(data: Union[str, Dict, object, List[Union[str, Dict, object, Tuple]]], human_prefix: Optional[str]=None):
+    if isinstance(data, str):
+        human_readable = data
+    elif isinstance(data, dict):
+        # TODO: something better than this
+        human_readable = data
+    elif isinstance(data, List):
+        if isinstance(data[0], str):
+            human_readable = '\n'.join(data)
+        elif isinstance(data[0], dict) or isinstance(data[0], object):
+            if not isinstance(data[0], dict):
+                data = [d.__dict__ for d in data]
+            import tabulate
+            human_readable = tabulate.tabulate([d.values() for d in data], headers=data[0].keys())
+        elif isinstance(data[0], tuple):
+            import tabulate
+            human_readable = tabulate.tabulate(data[1:], headers=data[0])
+        else:
+            human_readable = data
+    elif hasattr(data, '__str__'):
+        human_readable = str(data)
+    else:
+        # TODO: something better than this
+        human_readable = data.__dict__
+    human_readable = (human_prefix or '') + str(human_readable)
+    if ismachineoutput():
+        _machineoutput({
+            'type': 'finalize',
+            'data': data,
+            'human': human_readable
+        })
+    else:
+        click.echo(human_readable)
 
 class _MachineOutputProgessBar(_click_ProgressBar):
     def __init__(self, *args, **kwargs):
@@ -114,6 +148,7 @@ class PROSLogHandler(logging.StreamHandler):
     """
     A subclass of logging.StreamHandler so that we can correctly encapsulate logging messages
     """
+
     def emit(self, record):
         try:
             msg = self.format(record)
