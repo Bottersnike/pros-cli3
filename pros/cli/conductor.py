@@ -1,10 +1,10 @@
 import os.path
 
 import pros.common as p
+import pros.common.ui as ui
 import pros.conductor as c
 from pros.cli.common import *
 from pros.conductor.templates import ExternalTemplate
-import pros.common.ui as ui
 
 
 @click.group(cls=PROSGroup)
@@ -152,7 +152,7 @@ def new_project(ctx: click.Context, path: str, platform: str, version: str,
     try:
         project = c.Conductor().new_project(path, target=platform, version=version,
                                             force_user=force_user, force_system=force_system, **kwargs)
-        click.echo('New PROS Project was created:')
+        ui.echo('New PROS Project was created:', output_machine=False)
         ctx.invoke(info_project, project=project)
     except Exception as e:
         pros.common.logger(__name__).exception(e)
@@ -172,7 +172,8 @@ def new_project(ctx: click.Context, path: str, platform: str, version: str,
 @template_query(required=False)
 @click.pass_context
 @default_options
-def query_templates(ctx, query: c.BaseTemplate, allow_offline: bool, allow_online: bool, force_refresh: bool, limit: int):
+def query_templates(ctx, query: c.BaseTemplate, allow_offline: bool, allow_online: bool, force_refresh: bool,
+                    limit: int):
     """
     Query local and remote templates based on a spec
 
@@ -198,9 +199,10 @@ def query_templates(ctx, query: c.BaseTemplate, allow_offline: bool, allow_onlin
             }
     import semantic_version as semver
     render_templates = sorted(render_templates.values(), key=lambda k: k['local'])  # tertiary key
-    render_templates = sorted(render_templates, key=lambda k: semver.Version(k['version']), reverse=True)  # secondary key
+    render_templates = sorted(render_templates, key=lambda k: semver.Version(k['version']),
+                              reverse=True)  # secondary key
     render_templates = sorted(render_templates, key=lambda k: k['name'])  # primary key
-    ui.finalize(render_templates)
+    ui.finalize('template-query', render_templates)
 
 
 @conductor.command('info-project')
@@ -212,18 +214,26 @@ def info_project(project: c.Project):
 
     Visit https://pros.cs.purdue.edu/v5/cli/conductor to learn more
     """
-    if ismachineoutput():
-        import jsonpickle
-        if isdebug(__name__):
-            jsonpickle.set_encoder_options('json', sort_keys=True)
-        click.echo(jsonpickle.encode(project, unpicklable=False))
-    else:
-        import tabulate
-        click.echo(f'PROS Project for {project.target} at: {os.path.abspath(project.location)}' +
-                   f' ({project.name})' if project.name else '')
-        templates = [(t.name, t.version, t.metadata.get('origin', 'Unknown')) for t in project.templates.values()]
-        if any(templates):
-            click.echo('Installed Templates:')
-            click.echo(tabulate.tabulate(templates, headers=('Name', 'Version', 'Origin')))
-        else:
-            click.echo('No templates are part of this project.')
+
+    class ProjectReport(object):
+        def __init__(self, project: c.Project):
+            self.project = {
+                "target": project.target,
+                "location": os.path.abspath(project.location),
+                "name": project.name,
+                "templates": [{"name": t.name, "version": t.version, "origin": t.origin} for t in
+                              project.templates.values()]
+            }
+
+        def __str__(self):
+            import tabulate
+            s = f'PROS Project for {self.project["target"]} at: {self.project["location"]}' \
+                f' ({self.project["name"]})' if self.project["name"] else ''
+            s += '\n'
+            s += tabulate.tabulate([t.values() for t in self.project["templates"]], headers=('Name', 'Version', 'Origin'))
+            return s
+
+        def __getstate__(self):
+            return self.__dict__
+
+    ui.finalize('project-report', ProjectReport(project))

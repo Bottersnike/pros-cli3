@@ -21,9 +21,10 @@ def _machine_notify(method: str, obj: Dict[str, Any], notify_value: Optional[int
     _machineoutput(obj)
 
 
-def echo(text: str, err: bool = False, nl: bool = True, notify_value: int = None, color: Any = None):
+def echo(text: str, err: bool = False, nl: bool = True, notify_value: int = None, color: Any = None, output_machine: bool = True):
     if ismachineoutput():
-        return _machine_notify('echo', {'text': text + ('\n' if nl else '')}, notify_value)
+        if output_machine:
+            return _machine_notify('echo', {'text': text + ('\n' if nl else '')}, notify_value)
     else:
         return click.echo(text, nl=nl, err=err, color=color)
 
@@ -60,7 +61,8 @@ def progressbar(iterable: Iterable = None, length: int = None, label: str = None
         return click.progressbar(**locals())
 
 
-def finalize(data: Union[str, Dict, object, List[Union[str, Dict, object, Tuple]]], human_prefix: Optional[str]=None):
+def finalize(method: str, data: Union[str, Dict, object, List[Union[str, Dict, object, Tuple]]],
+             human_prefix: Optional[str] = None):
     if isinstance(data, str):
         human_readable = data
     elif isinstance(data, dict):
@@ -86,13 +88,19 @@ def finalize(data: Union[str, Dict, object, List[Union[str, Dict, object, Tuple]
         human_readable = data.__dict__
     human_readable = (human_prefix or '') + str(human_readable)
     if ismachineoutput():
+        if hasattr(data, '__getstate__'):
+            data = data.__getstate__()
+        else:
+            data = data.__dict__
         _machineoutput({
             'type': 'finalize',
+            'method': method,
             'data': data,
             'human': human_readable
         })
     else:
         click.echo(human_readable)
+
 
 class _MachineOutputProgessBar(_click_ProgressBar):
     def __init__(self, *args, **kwargs):

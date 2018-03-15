@@ -4,7 +4,6 @@ import zipfile
 from datetime import datetime
 
 import jsonpickle
-import requests
 
 from pros.common import logger
 import pros.common.ui as ui
@@ -18,6 +17,7 @@ class HttpDepot(Depot):
         super().__init__(name, location, config_schema={})
 
     def fetch_template(self, template: BaseTemplate, destination: str, **kwargs):
+        import requests
         assert 'location' in template.metadata
         url = template.metadata['location']
         response = requests.get(url, stream=True)
@@ -41,6 +41,7 @@ class HttpDepot(Depot):
             raise requests.ConnectionError(f'Could not obtain {url}')
 
     def update_remote_templates(self, **_):
+        import requests
         response = requests.get(self.location)
         if response.status_code == 200:
             self.remote_templates = jsonpickle.decode(response.text)

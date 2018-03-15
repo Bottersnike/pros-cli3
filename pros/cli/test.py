@@ -33,6 +33,6 @@ def test():
     except Exception as e:
         logger(__name__).exception(e)
 
-    ui.finalize({'hello': 'world'}, human_prefix='Created ')
+    ui.finalize('test', {'hello': 'world'}, human_prefix='Created ')
 
 
