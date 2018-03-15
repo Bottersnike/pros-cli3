@@ -90,7 +90,7 @@ def finalize(method: str, data: Union[str, Dict, object, List[Union[str, Dict, o
     if ismachineoutput():
         if hasattr(data, '__getstate__'):
             data = data.__getstate__()
-        else:
+        elif hasattr(data, '__dict__'):
             data = data.__dict__
         _machineoutput({
             'type': 'finalize',
