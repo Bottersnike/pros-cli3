@@ -95,7 +95,8 @@ def machine_output_option(f):
 
     def callback(ctx, param, value):
         ctx.ensure_object(dict)
-        ctx.obj[param.name] = value
+        if value:
+            ctx.obj[param.name] = value
         return value
 
     decorator = click.option('--machine-output', expose_value=False, is_flag=True, default=False, is_eager=True,

@@ -1,4 +1,4 @@
-import json
+import jsonpickle
 
 from click._termui_impl import ProgressBar as _click_ProgressBar
 
@@ -9,7 +9,7 @@ _current_notify_value = 0
 
 
 def _machineoutput(obj: Dict[str, Any]):
-    print(f'Uc&42BWAaQ{json.dumps(obj)}')
+    print(f'Uc&42BWAaQ{jsonpickle.dumps(obj, unpicklable=False)}')
 
 
 def _machine_notify(method: str, obj: Dict[str, Any], notify_value: Optional[int]):
@@ -63,19 +63,25 @@ def progressbar(iterable: Iterable = None, length: int = None, label: str = None
 
 def finalize(method: str, data: Union[str, Dict, object, List[Union[str, Dict, object, Tuple]]],
              human_prefix: Optional[str] = None):
+    """
+    To all those who have to debug this... RIP
+    """
+
     if isinstance(data, str):
         human_readable = data
     elif isinstance(data, dict):
-        # TODO: something better than this
         human_readable = data
     elif isinstance(data, List):
         if isinstance(data[0], str):
             human_readable = '\n'.join(data)
         elif isinstance(data[0], dict) or isinstance(data[0], object):
-            if not isinstance(data[0], dict):
-                data = [d.__dict__ for d in data]
-            import tabulate
-            human_readable = tabulate.tabulate([d.values() for d in data], headers=data[0].keys())
+            if hasattr(data[0], '__str__'):
+                human_readable = '\n'.join([str(d) for d in data])
+            else:
+                if not isinstance(data[0], dict):
+                    data = [d.__dict__ for d in data]
+                import tabulate
+                human_readable = tabulate.tabulate([d.values() for d in data], headers=data[0].keys())
         elif isinstance(data[0], tuple):
             import tabulate
             human_readable = tabulate.tabulate(data[1:], headers=data[0])
@@ -84,14 +90,9 @@ def finalize(method: str, data: Union[str, Dict, object, List[Union[str, Dict, o
     elif hasattr(data, '__str__'):
         human_readable = str(data)
     else:
-        # TODO: something better than this
         human_readable = data.__dict__
     human_readable = (human_prefix or '') + str(human_readable)
     if ismachineoutput():
-        if hasattr(data, '__getstate__'):
-            data = data.__getstate__()
-        elif hasattr(data, '__dict__'):
-            data = data.__dict__
         _machineoutput({
             'type': 'finalize',
             'method': method,
@@ -166,7 +167,7 @@ class PROSLogHandler(logging.StreamHandler):
                     'level': record.levelname,
                     'message': msg
                 }
-                msg = f'Uc&42BWAaQ{json.dumps(obj)}'
+                msg = f'Uc&42BWAaQ{jsonpickle.dumps(obj, unpicklable=False)}'
             stream = self.stream
             stream.write(msg)
             stream.write(self.terminator)

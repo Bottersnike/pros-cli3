@@ -126,7 +126,8 @@ class Conductor(Config):
             raise ValueError(f'Could not find a template satisfying {identifier} for {project.target}')
 
         if not isinstance(template, LocalTemplate):
-            template = self.fetch_template(self.get_depot(template.metadata['origin']), template, **kwargs)
+            with ui.Notification():
+                template = self.fetch_template(self.get_depot(template.metadata['origin']), template, **kwargs)
         assert isinstance(template, LocalTemplate)
 
         logger(__name__).info(str(project))
