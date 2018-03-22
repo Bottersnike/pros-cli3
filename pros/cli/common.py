@@ -130,8 +130,10 @@ def template_query(arg_name='query', required: bool = False):
             spec = value.pop(0)
         if not spec and required:
             raise ValueError(f'A {arg_name} is required to perform this command')
-        return c.BaseTemplate.create_query(spec,
+        query = c.BaseTemplate.create_query(spec,
                                            **{value[i][2:]: value[i + 1] for i in range(0, int(len(value) / 2) * 2, 2)})
+        logger(__name__).debug(query)
+        return query
 
     def wrapper(f):
         return click.argument(arg_name, nargs=-1, required=required, callback=callback)(f)

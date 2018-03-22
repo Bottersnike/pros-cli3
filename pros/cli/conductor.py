@@ -122,7 +122,7 @@ def upgrade(ctx: click.Context, project: c.Project, query: c.BaseTemplate, **kwa
             q = c.BaseTemplate.create_query(name=template)
             ctx.invoke(apply, upgrade_ok=True, project=project, query=q, **kwargs)
     else:
-        ctx.invoke(apply, upgrade_ok=True, **kwargs)
+        ctx.invoke(apply, project=project, query=query, upgrade_ok=True, **kwargs)
 
 
 @conductor.command('new-project', aliases=['new', 'create-project'])
