@@ -206,9 +206,10 @@ def query_templates(ctx, query: c.BaseTemplate, allow_offline: bool, allow_onlin
 
 
 @conductor.command('info-project')
+@click.option('--ls-upgrades/--no-ls-upgrades', 'ls_upgrades', default=False)
 @project_option()
 @default_options
-def info_project(project: c.Project):
+def info_project(project: c.Project, ls_upgrades):
     """
     Display information about a PROS project
 
@@ -230,10 +231,21 @@ def info_project(project: c.Project):
             s = f'PROS Project for {self.project["target"]} at: {self.project["location"]}' \
                 f' ({self.project["name"]})' if self.project["name"] else ''
             s += '\n'
-            s += tabulate.tabulate([t.values() for t in self.project["templates"]], headers=('Name', 'Version', 'Origin'))
+            rows = [t.values() for t in self.project["templates"]]
+            headers = [h.capitalize() for h in self.project["templates"][0].keys()]
+            s += tabulate.tabulate(rows, headers=headers)
             return s
 
         def __getstate__(self):
             return self.__dict__
 
-    ui.finalize('project-report', ProjectReport(project))
+    report = ProjectReport(project)
+    _conductor = c.Conductor()
+    if ls_upgrades:
+        for template in report.project['templates']:
+            templates = _conductor.resolve_templates(c.BaseTemplate.create_query(name=template["name"],
+                                                                                 version=f'>{template["version"]}',
+                                                                                 target=project.target))
+            template["upgrades"] = [t.version for t in templates]
+
+    ui.finalize('project-report', report)
