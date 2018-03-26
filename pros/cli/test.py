@@ -25,6 +25,8 @@ def test():
         with ui.progressbar(range(20)) as bar:
             for _ in bar:
                 time.sleep(0.1)
+        ui.echo('more below the ', nl=False)
+        ui.echo('progressbar')
     ui.echo('Back again bitches')
 
     logger(__name__).warning('Hello')
@@ -34,5 +36,7 @@ def test():
         logger(__name__).exception(e)
 
     ui.finalize('test', {'hello': 'world'}, human_prefix='Created ')
+
+    # ui.confirm('Hey')
 
 

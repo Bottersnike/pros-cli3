@@ -1,5 +1,4 @@
 import jsonpickle
-
 from click._termui_impl import ProgressBar as _click_ProgressBar
 
 from .utils import *
@@ -9,7 +8,7 @@ _current_notify_value = 0
 
 
 def _machineoutput(obj: Dict[str, Any]):
-    print(f'Uc&42BWAaQ{jsonpickle.dumps(obj, unpicklable=False)}')
+    click.echo(f'Uc&42BWAaQ{jsonpickle.dumps(obj, unpicklable=False)}')
 
 
 def _machine_notify(method: str, obj: Dict[str, Any], notify_value: Optional[int]):
@@ -21,7 +20,8 @@ def _machine_notify(method: str, obj: Dict[str, Any], notify_value: Optional[int
     _machineoutput(obj)
 
 
-def echo(text: str, err: bool = False, nl: bool = True, notify_value: int = None, color: Any = None, output_machine: bool = True):
+def echo(text: str, err: bool = False, nl: bool = True, notify_value: int = None, color: Any = None,
+         output_machine: bool = True):
     if ismachineoutput():
         if output_machine:
             return _machine_notify('echo', {'text': text + ('\n' if nl else '')}, notify_value)
@@ -29,10 +29,20 @@ def echo(text: str, err: bool = False, nl: bool = True, notify_value: int = None
         return click.echo(text, nl=nl, err=err, color=color)
 
 
-def confirm(text, default=False, abort=False, prompt_suffix=': ',
-            show_default=True, err=False):
+def confirm(text: str, default: bool = False, abort: bool = False, prompt_suffix: bool = ': ',
+            show_default: bool = True, err: bool = False, title: bool = 'Please confirm:'):
     if ismachineoutput():
-        pass
+        obj = {
+            'type': 'input/confirm',
+            'title': title,
+            'description': text,
+            'abort': abort,
+            'default': default,
+            'show_default': show_default
+        }
+
+        return click.confirm(f'Uc&42BWAaQ{jsonpickle.dumps(obj, unpicklable=False)}', abort=abort, prompt_suffix='',
+                             show_default=False)
     else:
         return click.confirm(text, default=default, abort=abort, prompt_suffix=prompt_suffix,
                              show_default=show_default, err=err)
@@ -115,7 +125,7 @@ class _MachineOutputProgessBar(_click_ProgressBar):
 
     def render_progress(self):
         super(_MachineOutputProgessBar, self).render_progress()
-        obj = {'label': self.label, 'pct': self.pct}
+        obj = {'text': self.label, 'pct': self.pct}
         if self.show_eta and self.eta_known and not self.finished:
             obj['eta'] = self.eta
         _machine_notify('progress', obj, self.notify_value)
@@ -168,9 +178,6 @@ class PROSLogHandler(logging.StreamHandler):
                     'message': msg
                 }
                 msg = f'Uc&42BWAaQ{jsonpickle.dumps(obj, unpicklable=False)}'
-            stream = self.stream
-            stream.write(msg)
-            stream.write(self.terminator)
-            self.flush()
+            click.echo(msg)
         except Exception:
             self.handleError(record)
