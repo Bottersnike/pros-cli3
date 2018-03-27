@@ -60,7 +60,8 @@ def make_upload_terminal(ctx):
 
 
 @build_cli.command('build-compile-commands', hidden=True)
-def build_compile_commands():
+@click.argument('build-args', nargs=-1)
+def build_compile_commands(build_args):
     """
     Build a compile_commands.json compatible with cquery
     :return:
@@ -100,8 +101,8 @@ def build_compile_commands():
     with TemporaryDirectory() as td:
         bindir = td.replace("\\", "/") if os.sep == '\\' else td
         args = create_intercept_parser().parse_args(
-            ['--override-compiler', '--use-cc', 'true', '--use-c++', 'true', make_cmd, 'all-obj',
-             f'BINDIR={bindir}', 'CC=intercept-cc', 'CXX=intercept-c++', 'LD=true'])
+            ['--override-compiler', '--use-cc', 'arm-none-eabi-gcc', '--use-c++', 'arm-none-eabi-g++', '--append', make_cmd, *build_args,
+             'CC=intercept-cc', 'CXX=intercept-c++'])
         print(args)
         exit_code, entries = libscanbuild_capture(args)
 
@@ -127,7 +128,6 @@ def build_compile_commands():
             continue
         if copy:
             cc_sysroot_includes.append(f'-I{line}')
-    print(cc_sysroot_includes)
     cxx_sysroot = subprocess.run([make_cmd, 'cxx-sysroot'], env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     lines = str(cxx_sysroot.stdout.decode()).splitlines()
     lines = [l.strip() for l in lines]
@@ -142,7 +142,6 @@ def build_compile_commands():
             continue
         if copy:
             cxx_sysroot_includes.append(f'-I{line}')
-    print(cxx_sysroot_includes)
     with open(args.cdb, 'w') as handle:
         import json
         json_entries = []
