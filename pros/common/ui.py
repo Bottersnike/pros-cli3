@@ -170,14 +170,20 @@ class PROSLogHandler(logging.StreamHandler):
 
     def emit(self, record):
         try:
-            msg = self.format(record)
             if ismachineoutput():
+                formatter = self.formatter or logging.Formatter()
+                record.message = record.getMessage()
                 obj = {
                     'type': 'log/message',
                     'level': record.levelname,
-                    'message': msg
+                    'message': formatter.formatMessage(record),
+                    'simpleMessage': record.message
                 }
+                if record.exc_info:
+                    obj['trace'] = formatter.formatException(record.exc_info)
                 msg = f'Uc&42BWAaQ{jsonpickle.dumps(obj, unpicklable=False)}'
+            else:
+                msg = self.format(record)
             click.echo(msg)
         except Exception:
             self.handleError(record)
