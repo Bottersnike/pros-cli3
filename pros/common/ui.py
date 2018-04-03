@@ -168,9 +168,15 @@ class PROSLogHandler(logging.StreamHandler):
     A subclass of logging.StreamHandler so that we can correctly encapsulate logging messages
     """
 
+    def __init__(self, *args, ctx_obj=None, **kwargs):
+        # Need access to the raw ctx_obj in case an exception is thrown before the context has
+        # been initialized (e.g. when argument parsing is happening)
+        self.ctx_obj = ctx_obj
+        super().__init__(*args, **kwargs)
+
     def emit(self, record):
         try:
-            if ismachineoutput():
+            if self.ctx_obj.get('machine_output', False):
                 formatter = self.formatter or logging.Formatter()
                 record.message = record.getMessage()
                 obj = {

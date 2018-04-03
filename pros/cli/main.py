@@ -17,19 +17,17 @@ from .common import default_options
 
 def main():
     try:
+        ctx_obj = {}
         pros_logger = logging.getLogger(pros.__name__)
         pros_logger.propagate = False
-        click_handler = ui.PROSLogHandler()
+        click_handler = ui.PROSLogHandler(ctx_obj=ctx_obj)
         # click_handler = logging.StreamHandler()
         click_handler.setLevel(logging.WARNING)
-
-        formatter = ui.PROSLogFormatter('%(levelname)s - %(name)s:%(funcName)s - %(message)s')
+        ctx_obj['click_handler'] = click_handler
+        formatter = ui.PROSLogFormatter('%(levelname)s - %(name)s:%(funcName)s - %(message)s', ctx_obj)
         click_handler.setFormatter(formatter)
         pros_logger.addHandler(click_handler)
         pros_logger.setLevel(logging.WARNING)
-        ctx_obj = {
-            'click_handler': click_handler
-        }
 
         cli.main(prog_name='pros', obj=ctx_obj)
     except KeyboardInterrupt:
