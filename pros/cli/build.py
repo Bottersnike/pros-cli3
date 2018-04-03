@@ -67,9 +67,10 @@ def build_compile_commands(build_args):
     Build a compile_commands.json compatible with cquery
     :return:
     """
-    from libscanbuild.compilation import Compilation
+    from libscanbuild.compilation import Compilation, CompilationDatabase
     from libscanbuild.arguments import create_intercept_parser
     from tempfile import TemporaryDirectory
+    import itertools
 
     def libscanbuild_capture(args):
         import argparse
@@ -102,13 +103,10 @@ def build_compile_commands(build_args):
     with TemporaryDirectory() as td:
         bindir = td.replace("\\", "/") if os.sep == '\\' else td
         args = create_intercept_parser().parse_args(
-            ['--override-compiler', '--use-cc', 'arm-none-eabi-gcc', '--use-c++', 'arm-none-eabi-g++', '--append', make_cmd, *build_args,
+            ['--override-compiler', '--use-cc', 'arm-none-eabi-gcc', '--use-c++', 'arm-none-eabi-g++', make_cmd,
+             *build_args,
              'CC=intercept-cc', 'CXX=intercept-c++'])
-        print(args)
         exit_code, entries = libscanbuild_capture(args)
-
-    if exit_code:
-        return exit_code
 
     import subprocess
     env = os.environ.copy()
@@ -128,7 +126,7 @@ def build_compile_commands(build_args):
             copy = False
             continue
         if copy:
-            cc_sysroot_includes.append(f'-I{line}')
+            cc_sysroot_includes.append(f'-isystem{line}')
     cxx_sysroot = subprocess.run([make_cmd, 'cxx-sysroot'], env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     lines = str(cxx_sysroot.stdout.decode()).splitlines()
     lines = [l.strip() for l in lines]
@@ -142,16 +140,29 @@ def build_compile_commands(build_args):
             copy = False
             continue
         if copy:
-            cxx_sysroot_includes.append(f'-I{line}')
+            cxx_sysroot_includes.append(f'-isystem{line}')
+    new_entries, entries = itertools.tee(entries, 2)
+    new_sources = set([e.source for e in entries])
+    old_entries = itertools.filterfalse(lambda entry: entry.source in new_sources, CompilationDatabase.load(args.cdb))
+
+    def new_entry_map(entry):
+        if entry.compiler == 'c':
+            entry.flags = cc_sysroot_includes + entry.flags
+        elif entry.compiler == 'c++':
+            entry.flags = cxx_sysroot_includes + entry.flags
+        return entry
+
+    new_entries = map(new_entry_map, new_entries)
+
+    def entry_map(entry: Compilation):
+        json_entry = entry.as_db_entry()
+        json_entry['arguments'][0] = 'clang' if entry.compiler == 'cc' else 'clang++'
+        return json_entry
+
+    entries = itertools.chain(old_entries, new_entries)
+    json_entries = list(map(entry_map, entries))
     with open(args.cdb, 'w') as handle:
         import json
-        json_entries = []
-        for entry in entries:
-            if entry.compiler == 'c':
-                entry.flags = cc_sysroot_includes + entry.flags
-            else:
-                entry.flags = cxx_sysroot_includes + entry.flags
-            entry = entry.as_db_entry()
-            entry['arguments'][0] = 'clang' if entry['arguments'][0] == 'cc' else 'clang++'
-            json_entries.append(entry)
         json.dump(json_entries, handle, sort_keys=True, indent=4)
+
+    return exit_code

@@ -105,7 +105,7 @@ def upload(path: str, port: str, **kwargs):
         logger(__name__).exception(e, exc_info=True)
         exit(1)
 
-    ui.finalize(f'Finished uploading {path} to {kwargs["device"]} on {port}', data={})
+    ui.finalize('upload', f'Finished uploading {path} to {kwargs["target"]} on {port}')
 
 
 @upload_cli.command('lsusb', aliases=['ls-usb', 'ls-devices', 'lsdev', 'list-usb', 'list-devices'])
