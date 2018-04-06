@@ -138,6 +138,7 @@ class Conductor(Config):
         if force or (template_installed and upgrade_ok) or (not template_installed and install_ok):
             project.apply_template(template, force_system=kwargs.pop('force_system', False),
                                    force_user=kwargs.pop('force_user', False))
+            ui.finalize('apply', f'Finished applying {template.identifier} to {project.location}')
         else:
             logger(__name__).warning(f'Could not install {template.identifier} because it is '
                                      f'{"" if template_installed else "not "}new to the project. '
