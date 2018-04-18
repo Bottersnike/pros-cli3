@@ -2,7 +2,7 @@ import sys
 
 import requests.certs
 from cx_Freeze import Executable, setup
-import libscanbuild.intercept
+
 try:  # for pip >= 10 -- https://stackoverflow.com/a/49867265/3175586
     from pip._internal.req import parse_requirements
 except ImportError:  # for pip <= 9.0.3
