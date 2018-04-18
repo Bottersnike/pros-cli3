@@ -4,7 +4,7 @@ stage('Build') {
       node("lin64") {
         checkout scm
         sh './scripts/install_build_dependencies.sh'
-        sh './scripts/build.sh'
+        sh 'vex --python python3.6 -mr jenkins ./scripts/build.sh'
         archiveArtifacts artifacts: 'out/*', onlyIfSuccessful: true
         archiveArtifacts artifacts: '*version', onlyIfSuccessful: true
       }
@@ -13,7 +13,7 @@ stage('Build') {
       node("lin86") {
         checkout scm
         sh './scripts/install_build_dependencies.sh'
-        sh './scripts/build.sh'
+        sh 'vex --python python3.6 -mr jenkins ./scripts/build.sh'
         archiveArtifacts artifacts: 'out/*', onlyIfSuccessful: true
         archiveArtifacts artifacts: '*version', onlyIfSuccessful: true
       }

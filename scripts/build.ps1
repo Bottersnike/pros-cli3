@@ -8,6 +8,9 @@ if ( -not $? ) {
 }
 
 Set-Location $root
+Write-Information "Upgrading pip, wheel, etc."
+& $python -m pip upgrade
+
 Write-Information "Installing wheel and cx_Freeze"
 & $python -m pip install wheel cx_Freeze
 
