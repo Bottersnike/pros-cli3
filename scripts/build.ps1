@@ -24,9 +24,11 @@ Write-Information "Bulding binary"
 & $python build.py build_exe
 
 Write-Information "Moving artifacts to ./out"
-Remove-Item -Recurse -Force -Path .\out
+
+Remove-Item -Recurse -Force -Path .\out | Out-Null
 New-Item ./out -ItemType directory | Out-Null
-Remove-Item .\out\* -Recurse
+Remove-Item .\out\* -Recurse | Out-Null
+
 Copy-Item dist\pros_cli*.whl .\out
 Copy-Item .\pros_cli*.zip .\out
 

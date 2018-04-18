@@ -4,7 +4,7 @@ stage('Build') {
       node("lin64") {
         checkout scm
         sh './scripts/install_build_dependencies.sh'
-        sh 'vex --python python3.6 -mr jenkins ./scripts/build.sh'
+        sh './scripts/build.sh'
         archiveArtifacts artifacts: 'out/*', onlyIfSuccessful: true
         archiveArtifacts artifacts: '*version', onlyIfSuccessful: true
       }
@@ -13,7 +13,7 @@ stage('Build') {
       node("lin86") {
         checkout scm
         sh './scripts/install_build_dependencies.sh'
-        sh 'vex --python python3.6 -mr jenkins ./scripts/build.sh'
+        sh './scripts/build.sh'
         archiveArtifacts artifacts: 'out/*', onlyIfSuccessful: true
         archiveArtifacts artifacts: '*version', onlyIfSuccessful: true
       }
@@ -21,8 +21,8 @@ stage('Build') {
     "windows64": {
       node("win64") {
         checkout scm
-        bat 'powershell -file .\\scripts\\install_build_dependencies.ps1'
-        bat 'powershell -file .\\scripts\\build.ps1'
+        powershell '.\\scripts\\install_build_dependencies.ps1'
+        powershell '.\\scripts\\build.ps1'
         archiveArtifacts artifacts: 'out/*', onlyIfSuccessful: true
         archiveArtifacts artifacts: '*version', onlyIfSuccessful: true
       }
@@ -30,8 +30,8 @@ stage('Build') {
     "windows86": {
       node("win86") {
         checkout scm
-        bat 'powershell -file .\\scripts\\install_build_dependencies.ps1'
-        bat 'powershell -file .\\scripts\\build.ps1'
+        powershell '.\\scripts\\install_build_dependencies.ps1'
+        powershell '.\\scripts\\build.ps1'
         archiveArtifacts artifacts: 'out/*', onlyIfSuccessful: true
         archiveArtifacts artifacts: '*version', onlyIfSuccessful: true
       }
