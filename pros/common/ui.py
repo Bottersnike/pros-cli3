@@ -1,14 +1,18 @@
 import jsonpickle
 from click._termui_impl import ProgressBar as _click_ProgressBar
+from click.termui import visible_prompt_func, Abort
+
 
 from .utils import *
 
 _last_notify_value = 0
 _current_notify_value = 0
 
+machinepickler = jsonpickle.JSONBackend()
+
 
 def _machineoutput(obj: Dict[str, Any]):
-    click.echo(f'Uc&42BWAaQ{jsonpickle.dumps(obj, unpicklable=False)}')
+    click.echo(f'Uc&42BWAaQ{jsonpickle.dumps(obj, unpicklable=False, backend=machinepickler)}')
 
 
 def _machine_notify(method: str, obj: Dict[str, Any], notify_value: Optional[int]):
@@ -41,8 +45,23 @@ def confirm(text: str, default: bool = False, abort: bool = False, prompt_suffix
             'show_default': show_default
         }
 
-        return click.confirm(f'Uc&42BWAaQ{jsonpickle.dumps(obj, unpicklable=False)}', abort=abort, prompt_suffix='',
-                             show_default=False)
+        while 1:
+            _machineoutput(obj)
+            try:
+                value = visible_prompt_func('').lower().strip()
+            except (KeyboardInterrupt, EOFError):
+                raise Abort()
+            if value in ('y', 'yes'):
+                rv = True
+            elif value in ('n', 'no'):
+                rv = False
+            elif value == '':
+                rv = default
+            else:
+                echo('Error: invalid input', err=err)
+                continue
+            break
+        return rv
     else:
         return click.confirm(text, default=default, abort=abort, prompt_suffix=prompt_suffix,
                              show_default=show_default, err=err)
@@ -187,7 +206,7 @@ class PROSLogHandler(logging.StreamHandler):
                 }
                 if record.exc_info:
                     obj['trace'] = formatter.formatException(record.exc_info)
-                msg = f'Uc&42BWAaQ{jsonpickle.dumps(obj, unpicklable=False)}'
+                msg = f'Uc&42BWAaQ{jsonpickle.dumps(obj, unpicklable=False, backend=machinepickler)}'
             else:
                 msg = self.format(record)
             click.echo(msg)
