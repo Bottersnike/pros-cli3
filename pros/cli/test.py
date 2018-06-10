@@ -37,4 +37,4 @@ def test():
 
     ui.finalize('test', {'hello': 'world'}, human_prefix='Created ')
 
-    # ui.confirm('Hey')
+    ui.finalize('what', ui.confirm('Hey'))
