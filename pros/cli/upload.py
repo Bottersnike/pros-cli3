@@ -1,7 +1,5 @@
 import pros.common.ui as ui
 import pros.conductor as c
-from pros.serial.devices.vex import *
-from pros.serial.ports import DirectPort
 
 from .click_classes import *
 from .common import *
@@ -30,6 +28,8 @@ def upload_cli():
               cls=PROSOption, group='V5 Options', hidden=True)
 @default_options
 def upload(path: str, port: str, **kwargs):
+    import pros.serial.devices.vex as vex
+    from pros.serial.ports import DirectPort
     """
     Upload a binary to a microcontroller.
 
@@ -95,9 +95,9 @@ def upload(path: str, port: str, **kwargs):
         ser = DirectPort(port)
         device = None
         if kwargs['target'] == 'v5':
-            device = V5Device(ser)
+            device = vex.V5Device(ser)
         elif kwargs['target'] == 'cortex':
-            device = CortexDevice(ser).get_connected_device()
+            device = vex.CortexDevice(ser).get_connected_device()
         with click.open_file(path, mode='rb') as pf:
             device.write_program(pf, *args, **kwargs)
     except Exception as e:
@@ -111,6 +111,7 @@ def upload(path: str, port: str, **kwargs):
 @click.option('--target', type=click.Choice(['v5', 'cortex']), default=None, required=False)
 @default_options
 def ls_usb(target):
+    from pros.serial.devices.vex import find_v5_ports, find_cortex_ports
     class PortReport(object):
         def __init__(self, header: str, ports: List[Any], machine_header: Optional[str] = None):
             self.header = header

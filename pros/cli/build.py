@@ -1,6 +1,5 @@
 import os
 import os.path
-import subprocess
 import sys
 from typing import *
 
@@ -8,7 +7,7 @@ import click
 import pros.conductor as c
 
 from .click_classes import PROSGroup
-from pros.common.cli_config import cli_config
+from pros.config.cli_config import cli_config
 
 
 @click.group(cls=PROSGroup)
@@ -23,6 +22,7 @@ def make(ctx, build_args):
     """
     Build current PROS project or cwd
     """
+    import subprocess
     if cli_config().use_build_compile_commands:
         return ctx.forward(build_compile_commands)
     env = os.environ.copy()
