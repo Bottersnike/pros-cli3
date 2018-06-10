@@ -3,7 +3,7 @@ from pros.cli.common import *
 from pros.config.cli_config import cli_config
 
 
-@click.group(cls=PROSGroup)
+@pros_root
 def misc_commands_cli():
     pass
 
@@ -15,33 +15,28 @@ def misc_commands_cli():
               help='Only check if a new version is available, do not attempt to install')
 @default_options
 def upgrade(force_check, no_install):
+    """
+    Check for updates to the PROS CLI
+    """
     from pros.upgrade import UpgradeManager
     manager = UpgradeManager()
     manifest = manager.get_manifest(force_check)
-    if manifest is None:
-        ui.logger(__name__).error('Failed to get upgrade information. Try running with --debug for more information')
+    ui.logger(__name__).debug(repr(manifest))
+    if manager.has_stale_manifest:
+        ui.logger(__name__).error('Failed to get latest upgrade information. '
+                                  'Try running with --debug for more information')
         return -1
-    if no_install:
-        ui.finalize('upgradeInfo', manifest)
+    if not manager.needs_upgrade:
+        ui.finalize('upgradeInfo', 'PROS CLI is up to date')
     else:
-        ui.echo(manifest.describe_update())
-        manifest.perform_upgrade()
-        ui.finalize('upgradeComplete', manifest.describe_post_install())
-
-
-if os.path.exists(os.path.join(__file__, '..', '..', '..', '.git')):
-    @misc_commands_cli.command()
-    @click.option('--version', default=None)
-    @click.option('--download-url', prompt=True)
-    @click.option('--info-url', prompt=True)
-    def create_upgrade_manifest(version, download_url, info_url):
-        from pros.upgrade.manifests.upgrade_manifest_v1 import UpgradeManifestV1
-        from semantic_version import Version
-        import jsonpickle
-        if version is None:
-            version = get_version()
-        upgrade_manifest = UpgradeManifestV1()
-        upgrade_manifest.version = Version(version)
-        upgrade_manifest.download_url = download_url
-        upgrade_manifest.info_url = info_url
-        print(jsonpickle.encode(upgrade_manifest))
+        ui.finalize('upgradeInfo', manifest)
+        if not no_install:
+            if not manager.can_perform_upgrade:
+                ui.logger(__name__).error(f'This manifest cannot perform the upgrade.')
+                return -3
+            rv = manager.perform_upgrade()
+            if not rv:
+                ui.logger(__name__).error(f'Failed to perform upgrade to {manifest.version}. '
+                                          f'Try running with --debug for more infromation')
+                return -2 
+            ui.finalize('upgradeComplete', manager.describe_post_upgrade())

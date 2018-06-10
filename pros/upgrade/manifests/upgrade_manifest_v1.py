@@ -41,5 +41,5 @@ class UpgradeManifestV1(object):
         from click import launch
         return launch(self.info_url) == 0
 
-    def describe_post_install(self) -> str:
+    def describe_post_install(self, **kwargs) -> str:
         return f'Download the latest version from {self.info_url}'

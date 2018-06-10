@@ -2,7 +2,7 @@ from .click_classes import *
 from .common import *
 
 
-@click.group()
+@pros_root
 def v5_utils_cli():
     pass
 

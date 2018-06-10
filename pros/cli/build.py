@@ -4,13 +4,13 @@ import sys
 from typing import *
 
 import click
-import pros.conductor as c
 
-from .click_classes import PROSGroup
+import pros.conductor as c
+from pros.cli.common import pros_root
 from pros.config.cli_config import cli_config
 
 
-@click.group(cls=PROSGroup)
+@pros_root
 def build_cli():
     pass
 

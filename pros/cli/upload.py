@@ -5,7 +5,7 @@ from .click_classes import *
 from .common import *
 
 
-@click.group(cls=PROSGroup)
+@pros_root
 def upload_cli():
     pass
 
@@ -28,8 +28,6 @@ def upload_cli():
               cls=PROSOption, group='V5 Options', hidden=True)
 @default_options
 def upload(path: str, port: str, **kwargs):
-    import pros.serial.devices.vex as vex
-    from pros.serial.ports import DirectPort
     """
     Upload a binary to a microcontroller.
 
@@ -39,6 +37,8 @@ def upload(path: str, port: str, **kwargs):
     [PORT] may be any valid communication port file, such as COM1 or /dev/ttyACM0. If left blank, then a port is
     automatically detected based on the target (or as supplied by the PROS project)
     """
+    import pros.serial.devices.vex as vex
+    from pros.serial.ports import DirectPort
     args = []
     if path is None or os.path.isdir(path):
         project_path = c.Project.find_project(path or os.getcwd())
@@ -111,7 +111,11 @@ def upload(path: str, port: str, **kwargs):
 @click.option('--target', type=click.Choice(['v5', 'cortex']), default=None, required=False)
 @default_options
 def ls_usb(target):
+    """
+    List plugged in VEX Devices
+    """
     from pros.serial.devices.vex import find_v5_ports, find_cortex_ports
+
     class PortReport(object):
         def __init__(self, header: str, ports: List[Any], machine_header: Optional[str] = None):
             self.header = header

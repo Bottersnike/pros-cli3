@@ -9,10 +9,10 @@ import pros.serial.ports as ports
 from pros.common.utils import logger
 
 from .click_classes import PROSGroup
-from .common import default_options, resolve_v5_port, resolve_cortex_port
+from .common import default_options, resolve_v5_port, resolve_cortex_port, pros_root
 
 
-@click.group(cls=PROSGroup)
+@pros_root
 def terminal_cli():
     pass
 
