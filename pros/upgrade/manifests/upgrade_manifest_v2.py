@@ -3,7 +3,9 @@ from enum import Enum
 from typing import *
 
 import pros.common.ui as ui
+from pros.common import logger
 from .upgrade_manifest_v1 import UpgradeManifestV1
+from ..instructions import UpgradeInstruction, UpgradeResult, NothingInstruction
 
 
 class PlatformsV2(Enum):
@@ -15,19 +17,6 @@ class PlatformsV2(Enum):
     Pip = 5
 
 
-class ActionV2(Enum):
-    Nothing = 0,
-    OpenExplorer = 1,
-    OpenShell = 2,
-    Browser = 3
-
-
-class DownloadDescriptionV2(NamedTuple):
-    url: str
-    instructions: str
-    action: 'ActionV2'
-
-
 class UpgradeManifestV2(UpgradeManifestV1):
     """
     an Upgrade Manifest capable of determining if there is an update, and possibly an installer to download,
@@ -36,7 +25,7 @@ class UpgradeManifestV2(UpgradeManifestV1):
 
     def __init__(self):
         super().__init__()
-        self.download_urls: Dict['PlatformsV2', 'DownloadDescriptionV2'] = {}
+        self.platform_instructions: Dict[PlatformsV2, UpgradeInstruction] = {}
 
         self._platform: 'PlatformsV2' = None
 
@@ -74,36 +63,14 @@ class UpgradeManifestV2(UpgradeManifestV1):
 
     @property
     def can_perform_upgrade(self) -> bool:
-        return self.platform in self.download_urls.keys()
-
-    def perform_upgrade(self) -> bool:
-        assert self.can_perform_upgrade
-
-        manifest = self.download_urls[self.platform]
-        if manifest.action == ActionV2.Nothing:
-            return True
-        if manifest.action == ActionV2.Browser:
-            from click import launch
-            return launch(manifest.url) == 0
-
-        self._last_file = None
-        from pros.common.utils import download_file
-        self._last_file = download_file(manifest.url)
-
-        if manifest.action == ActionV2.OpenExplorer:
-            from click import launch
-            return launch(f, locate=True) == 0
-        if manifest.action == ActionV2.OpenShell and \
-                not (hasattr(sys.stdin, 'isatty') and sys.stdin.isatty()):
-            # TODO
-            pass
-        ui.echo(f'File downloaded to {self._last_file}')
-        self.describe_post_install(self._last_file)
         return True
 
-    def describe_post_install(self, downloaded_file: str=None, **kwargs) -> str:
-        assert self.can_perform_upgrade
-        return self.download_urls[self.platform].instructions.replace('//FILE\\\\', downloaded_file or self._last_file or '<downloaded_file>')
+    def perform_upgrade(self) -> UpgradeResult:
+        instructions: UpgradeInstruction = self.platform_instructions.get(self.platform, NothingInstruction())
+        logger(__name__).debug(self.__dict__)
+        logger(__name__).debug(f'Platform: {self.platform}')
+        logger(__name__).debug(instructions.__dict__)
+        return instructions.perform_upgrade()
 
     def __repr__(self):
         return repr({

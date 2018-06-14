@@ -4,9 +4,11 @@ from enum import Enum
 from typing import *
 
 import pros.common
+import pros.common.ui as ui
 from pros.config import Config
 from pros.config.cli_config import cli_config
 from .manifests import *
+from .instructions import UpgradeResult
 
 
 class ReleaseChannel(Enum):
@@ -32,7 +34,7 @@ class UpgradeManager(Config):
         if not force and not self.has_stale_manifest:
             return self._manifest
 
-        pros.common.logger(__name__).info('Fetching upgrade manifest...')
+        ui.echo('Fetching upgrade manifest...')
         import requests
         import jsonpickle
         import json
@@ -69,7 +71,7 @@ class UpgradeManager(Config):
         assert manifest is not None
         return manifest.can_perform_upgrade
 
-    def perform_upgrade(self) -> bool:
+    def perform_upgrade(self) -> UpgradeResult:
         manifest = self.get_manifest()
         assert manifest is not None
         return manifest.perform_upgrade()

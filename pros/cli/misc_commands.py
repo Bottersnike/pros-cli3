@@ -34,9 +34,4 @@ def upgrade(force_check, no_install):
             if not manager.can_perform_upgrade:
                 ui.logger(__name__).error(f'This manifest cannot perform the upgrade.')
                 return -3
-            rv = manager.perform_upgrade()
-            if not rv:
-                ui.logger(__name__).error(f'Failed to perform upgrade to {manifest.version}. '
-                                          f'Try running with --debug for more infromation')
-                return -2 
-            ui.finalize('upgradeComplete', manager.describe_post_upgrade())
+            ui.finalize('upgradeComplete', manager.perform_upgrade())

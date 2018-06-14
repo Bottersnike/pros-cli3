@@ -1,6 +1,7 @@
 from semantic_version import Version
 
-from pros.common.utils import get_version
+from pros.common.utils import get_version, logger
+from ..instructions import UpgradeResult
 
 
 class UpgradeManifestV1(object):
@@ -37,9 +38,10 @@ class UpgradeManifestV1(object):
     def can_perform_upgrade(self) -> bool:
         return isinstance(self.info_url, str)
 
-    def perform_upgrade(self) -> bool:
+    def perform_upgrade(self) -> UpgradeResult:
+        logger(__name__).debug(self.__dict__)
         from click import launch
-        return launch(self.info_url) == 0
+        return UpgradeResult(launch(self.info_url) == 0)
 
     def describe_post_install(self, **kwargs) -> str:
         return f'Download the latest version from {self.info_url}'
