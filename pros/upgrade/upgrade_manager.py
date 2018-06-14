@@ -39,7 +39,7 @@ class UpgradeManager(Config):
         import jsonpickle
         import json
 
-        channel_url = f'https://www.cs.purdue.edu/~berman5/{self.release_channel.value}'
+        channel_url = f'https://purduesigbots.github.io/pros-mainline/{self.release_channel.value}'
         for manifest in manifests:
             resp = requests.get(f'{channel_url}/{manifest.__name__}.json')
             if resp.status_code == 200:
