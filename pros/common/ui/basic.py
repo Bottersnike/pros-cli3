@@ -1,3 +1,5 @@
+import threading
+
 import jsonpickle
 from click._termui_impl import ProgressBar as _click_ProgressBar
 from click.termui import visible_prompt_func, Abort
@@ -7,6 +9,7 @@ from ..utils import *
 _last_notify_value = 0
 _current_notify_value = 0
 machinepickler = jsonpickle.JSONBackend()
+
 
 def _machineoutput(obj: Dict[str, Any]):
     click.echo(f'Uc&42BWAaQ{jsonpickle.dumps(obj, unpicklable=False, backend=machinepickler)}')
@@ -167,4 +170,36 @@ class Notification(object):
         _current_notify_value = self.old_notify_values.pop()
 
 
-__all__ = ['finalize', 'echo', 'confirm', 'prompt', 'progressbar', 'logger', 'Notification']
+class EchoPipe(threading.Thread):
+    def __init__(self, err: bool = False, ctx: Optional[click.Context] = None):
+        """Setup the object with a logger and a loglevel
+        and start the thread
+        """
+        self.click_ctx = ctx or click.get_current_context(silent=True)
+        self.stderr = err
+        threading.Thread.__init__(self)
+        self.daemon = False
+        self.fdRead, self.fdWrite = os.pipe()
+        self.pipeReader = os.fdopen(self.fdRead)
+        self.start()
+
+    def fileno(self):
+        """Return the write file descriptor of the pipe
+        """
+        return self.fdWrite
+
+    def run(self):
+        """Run the thread, logging everything.
+        """
+        for line in iter(self.pipeReader.readline, ''):
+            echo(line.strip('\n'), ctx=self.click_ctx, err=self.stderr)
+
+        self.pipeReader.close()
+
+    def close(self):
+        """Close the write end of the pipe.
+        """
+        os.close(self.fdWrite)
+
+
+__all__ = ['finalize', 'echo', 'confirm', 'prompt', 'progressbar', 'logger', 'Notification', 'EchoPipe']
