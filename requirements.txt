@@ -9,3 +9,5 @@ colorama
 pyzmq
 cobs
 scan-build
+rfc6266
+raven

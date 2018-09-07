@@ -1,8 +1,11 @@
 import glob
+import io
 import os.path
+import sys
 from typing import *
 
 from pros.common import *
+from pros.common.ui import EchoPipe
 from pros.config.config import Config, ConfigNotFoundException
 from .templates import LocalTemplate, Template, BaseTemplate
 from .transaction import Transaction
@@ -68,6 +71,7 @@ class Project(Config):
         :param force_user:
         :return:
         """
+        assert template.target == self.target
         transaction = Transaction(self.location, set(self.all_files))
         installed_user_files = set()
         for lib_name, lib in self.templates.items():
@@ -111,7 +115,7 @@ class Project(Config):
         self.templates[template.name] = template
         self.save()
 
-    def remove_template(self, template: Template, remove_user: bool=False, remove_empty_directories: bool=True):
+    def remove_template(self, template: Template, remove_user: bool = False, remove_empty_directories: bool = True):
         if not self.template_is_installed(template):
             raise ValueError(f'{template.identifier} is not installed on this project.')
         if template.name == 'kernel':
@@ -163,12 +167,177 @@ class Project(Config):
             return self.__dict__['output']
         return 'bin/output.bin'
 
+    def make(self, build_args: List[str]):
+        import subprocess
+        env = os.environ.copy()
+        # Add PROS toolchain to the beginning of PATH to ensure PROS binaries are preferred
+        if os.environ.get('PROS_TOOLCHAIN'):
+            env['PATH'] = os.path.join(os.environ.get('PROS_TOOLCHAIN'), 'bin') + os.pathsep + env['PATH']
+
+        # call make.exe if on Windows
+        if os.name == 'nt' and os.environ.get('PROS_TOOLCHAIN'):
+            make_cmd = os.path.join(os.environ.get('PROS_TOOLCHAIN'), 'bin', 'make.exe')
+        else:
+            make_cmd = 'make'
+        stdout_pipe = EchoPipe()
+        stderr_pipe = EchoPipe(err=True)
+        process = subprocess.Popen(executable=make_cmd, args=[make_cmd, *build_args], cwd=self.directory, env=env,
+                                   stdout=stdout_pipe, stderr=stderr_pipe)
+        stdout_pipe.close()
+        stderr_pipe.close()
+        process.wait()
+        return process.returncode
+
+    def make_scan_build(self, build_args: Tuple[str], cdb_file: Optional[Union[str, io.IOBase]] = None,
+                        suppress_output: bool = False, sandbox: bool = False):
+        from libscanbuild.compilation import Compilation, CompilationDatabase
+        from libscanbuild.arguments import create_intercept_parser
+        import itertools
+
+        import subprocess
+        import argparse
+
+        if sandbox:
+            import tempfile
+            td = tempfile.TemporaryDirectory()
+            td_path = td.name.replace("\\", "/")
+            build_args = [*build_args, f'BINDIR={td_path}']
+
+        def libscanbuild_capture(args: argparse.Namespace) -> Tuple[int, Iterable[Compilation]]:
+            from libscanbuild.intercept import setup_environment, run_build, exec_trace_files, parse_exec_trace, \
+                compilations
+            from libear import temporary_directory
+            """ Implementation of compilation database generation.
+            :param args:    the parsed and validated command line arguments
+            :return:        the exit status of build process. """
+
+            with temporary_directory(prefix='intercept-') as tmp_dir:
+                # run the build command
+                environment = setup_environment(args, tmp_dir)
+                if os.environ.get('PROS_TOOLCHAIN'):
+                    environment['PATH'] = os.path.join(os.environ.get('PROS_TOOLCHAIN'), 'bin') + os.pathsep + \
+                                          environment['PATH']
+                if not suppress_output:
+                    pipe = EchoPipe()
+                else:
+                    pipe = subprocess.DEVNULL
+                logger(__name__).debug(self.directory)
+                exit_code = run_build(args.build, env=environment, stdout=pipe, stderr=pipe, cwd=self.directory)
+                if not suppress_output:
+                    pipe.close()
+                # read the intercepted exec calls
+                calls = (parse_exec_trace(file) for file in exec_trace_files(tmp_dir))
+                current = compilations(calls, args.cc, args.cxx)
+
+                return exit_code, iter(set(current))
+
+        # call make.exe if on Windows
+        if os.name == 'nt' and os.environ.get('PROS_TOOLCHAIN'):
+            make_cmd = os.path.join(os.environ.get('PROS_TOOLCHAIN'), 'bin', 'make.exe')
+        else:
+            make_cmd = 'make'
+        args = create_intercept_parser().parse_args(
+            ['--override-compiler', '--use-cc', 'arm-none-eabi-gcc', '--use-c++', 'arm-none-eabi-g++', make_cmd,
+             *build_args,
+             'CC=intercept-cc', 'CXX=intercept-c++'])
+        exit_code, entries = libscanbuild_capture(args)
+
+        if sandbox:
+            td.cleanup()
+
+        any_entries, entries = itertools.tee(entries, 2)
+        if not any(any_entries):
+            return exit_code
+        if not suppress_output:
+            ui.echo('Capturing metadata for PROS Editor...')
+        env = os.environ.copy()
+        # Add PROS toolchain to the beginning of PATH to ensure PROS binaries are preferred
+        if os.environ.get('PROS_TOOLCHAIN'):
+            env['PATH'] = os.path.join(os.environ.get('PROS_TOOLCHAIN'), 'bin') + os.pathsep + env['PATH']
+        cc_sysroot = subprocess.run([make_cmd, 'cc-sysroot'], env=env, stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE, cwd=self.directory)
+        lines = str(cc_sysroot.stderr.decode()).splitlines() + str(cc_sysroot.stdout.decode()).splitlines()
+        lines = [l.strip() for l in lines]
+        cc_sysroot_includes = []
+        copy = False
+        for line in lines:
+            if line == '#include <...> search starts here:':
+                copy = True
+                continue
+            if line == 'End of search list.':
+                copy = False
+                continue
+            if copy:
+                cc_sysroot_includes.append(f'-isystem{line}')
+        cxx_sysroot = subprocess.run([make_cmd, 'cxx-sysroot'], env=env, stdout=subprocess.PIPE,
+                                     stderr=subprocess.PIPE, cwd=self.directory)
+        lines = str(cxx_sysroot.stderr.decode()).splitlines() + str(cxx_sysroot.stdout.decode()).splitlines()
+        lines = [l.strip() for l in lines]
+        cxx_sysroot_includes = []
+        copy = False
+        for line in lines:
+            if line == '#include <...> search starts here:':
+                copy = True
+                continue
+            if line == 'End of search list.':
+                copy = False
+                continue
+            if copy:
+                cxx_sysroot_includes.append(f'-isystem{line}')
+        new_entries, entries = itertools.tee(entries, 2)
+        new_sources = set([e.source for e in entries])
+        if not cdb_file:
+            cdb_file = os.path.join(self.directory, 'compile_commands.json')
+        if isinstance(cdb_file, str) and os.path.isfile(cdb_file):
+            old_entries = itertools.filterfalse(lambda entry: entry.source in new_sources,
+                                                CompilationDatabase.load(cdb_file))
+        else:
+            old_entries = []
+
+        extra_flags = ['-target', 'armv7ar-none-none-eabi']
+        logger(__name__).debug('cc_sysroot_includes')
+        logger(__name__).debug(cc_sysroot_includes)
+        logger(__name__).debug('cxx_sysroot_includes')
+        logger(__name__).debug(cxx_sysroot_includes)
+
+        if sys.platform == 'win32':
+            extra_flags.extend(["-fno-ms-extensions", "-fno-ms-compatibility", "-fno-delayed-template-parsing"])
+
+        def new_entry_map(entry):
+            if entry.compiler == 'c':
+                entry.flags = extra_flags + cc_sysroot_includes + entry.flags
+            elif entry.compiler == 'c++':
+                entry.flags = extra_flags + cxx_sysroot_includes + entry.flags
+            return entry
+
+        new_entries = map(new_entry_map, new_entries)
+
+        def entry_map(entry: Compilation):
+            json_entry = entry.as_db_entry()
+            json_entry['arguments'][0] = 'clang' if entry.compiler == 'cc' else 'clang++'
+            return json_entry
+
+        entries = itertools.chain(old_entries, new_entries)
+        json_entries = list(map(entry_map, entries))
+        if isinstance(cdb_file, str):
+            cdb_file = open(cdb_file, 'w')
+        import json
+        json.dump(json_entries, cdb_file, sort_keys=True, indent=4)
+
+        return exit_code
+
+    def compile(self, build_args: List[str], scan_build: Optional[bool] = None):
+        if scan_build is None:
+            from pros.config.cli_config import cli_config
+            scan_build = cli_config().use_build_compile_commands
+        return self.make_scan_build(build_args) if scan_build else self.make(build_args)
+
     @staticmethod
     def find_project(path: str, recurse_times: int = 10):
         path = os.path.abspath(path)
         if os.path.isfile(path):
-            return path
-        elif os.path.isdir(path):
+            path = os.path.dirname(path)
+        if os.path.isdir(path):
             for n in range(recurse_times):
                 if path is not None and os.path.isdir(path):
                     files = [f for f in os.listdir(path)

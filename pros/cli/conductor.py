@@ -6,7 +6,7 @@ from pros.cli.common import *
 from pros.conductor.templates import ExternalTemplate
 
 
-@click.group(cls=PROSGroup)
+@pros_root
 def conductor_cli():
     pass
 
@@ -157,7 +157,7 @@ def upgrade(ctx: click.Context, project: c.Project, query: c.BaseTemplate, **kwa
 @template_query()
 @default_options
 def uninstall_template(project: c.Project, query: c.BaseTemplate, remove_user: bool,
-                       remove_empty_directories: bool=False):
+                       remove_empty_directories: bool = False):
     """
     Uninstall a template from a PROS project
 
@@ -179,11 +179,15 @@ def uninstall_template(project: c.Project, query: c.BaseTemplate, remove_user: b
               help='Force update all remote depots, ignoring automatic update checks')
 @click.option('--no-default-libs', 'no_default_libs', default=False, is_flag=True,
               help='Do not install any default libraries after creating the project.')
+@click.option('--compile-after', is_flag=True, default=False, show_default=True,
+              help='Compile the project after creation')
+@click.option('--build-cache', is_flag=True, default=False, show_default=False,
+              help='Build compile commands cache after creation. Overrides --compile-after if both are specified.')
 @click.pass_context
 @default_options
 def new_project(ctx: click.Context, path: str, target: str, version: str,
                 force_user: bool = False, force_system: bool = False,
-                no_default_libs: bool = False, **kwargs):
+                no_default_libs: bool = False, compile_after: bool = False, build_cache: bool = False, **kwargs):
     """
     Create a new PROS project
 
@@ -192,8 +196,9 @@ def new_project(ctx: click.Context, path: str, target: str, version: str,
     if version.lower() == 'latest' or not version:
         version = '>0'
     if not force_system and c.Project.find_project(path) is not None:
-        pros.common.logger(__name__).error('A project already exists in this location! Delete it first')
-        return -1
+        pros.common.logger(__name__).error('A project already exists in this location! Delete it first',
+                                           extra={'sentry': False})
+        ctx.exit(-1)
     try:
         _conductor = c.Conductor()
         if target is None:
@@ -203,9 +208,14 @@ def new_project(ctx: click.Context, path: str, target: str, version: str,
                                          no_default_libs=no_default_libs, **kwargs)
         ui.echo('New PROS Project was created:', output_machine=False)
         ctx.invoke(info_project, project=project)
+
+        if compile_after or build_cache:
+            with ui.Notification():
+                ctx.exit(project.compile([], scan_build=build_cache))
+
     except Exception as e:
         pros.common.logger(__name__).exception(e)
-        return -1
+        ctx.exit(-1)
 
 
 @conductor.command('query-templates',

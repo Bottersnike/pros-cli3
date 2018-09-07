@@ -3,18 +3,15 @@ import signal
 import time
 
 import click
+
 import pros.conductor as c
 import pros.serial.devices as devices
 import pros.serial.ports as ports
 from pros.common.utils import logger
-from pros.serial.devices.vex.v5_user_device import V5UserDevice
-from pros.serial.terminal import Terminal
-
-from .click_classes import PROSGroup
-from .common import default_options, resolve_v5_port, resolve_cortex_port
+from .common import default_options, resolve_v5_port, resolve_cortex_port, pros_root
 
 
-@click.group(cls=PROSGroup)
+@pros_root
 def terminal_cli():
     pass
 
@@ -42,13 +39,20 @@ def terminal(port: str, backend: str, **kwargs):
 
     Note: share backend is not yet implemented.
     """
+    from pros.serial.devices.vex.v5_user_device import V5UserDevice
+    from pros.serial.terminal import Terminal
     if port == 'default':
         project_path = c.Project.find_project(os.getcwd())
         if project_path is None:
-            logger(__name__).error('You must be in a PROS project directory to enable default port selecting')
-            return -1
-        project = c.Project(project_path)
-        port = project.target
+            v5_port = resolve_v5_port(None, 'user', quiet=True)
+            cortex_port = resolve_cortex_port(None, quiet=True)
+            if ((v5_port is None) ^ (cortex_port is None)) or (v5_port is not None and v5_port == cortex_port):
+                port = v5_port or cortex_port
+            else:
+                raise click.UsageError('You must be in a PROS project directory to enable default port selecting')
+        else:
+            project = c.Project(project_path)
+            port = project.target
 
     if port == 'v5':
         port = None
@@ -56,6 +60,7 @@ def terminal(port: str, backend: str, **kwargs):
     elif port == 'cortex':
         port = None
         port = resolve_cortex_port(port)
+        kwargs['raw'] = True
     if not port:
         return -1
 

@@ -1,11 +1,8 @@
-from pros.serial.devices.vex import V5Device
-from pros.serial.ports import DirectPort
-
 from .click_classes import *
 from .common import *
 
 
-@click.group()
+@pros_root
 def v5_utils_cli():
     pass
 
@@ -23,21 +20,22 @@ def status(port: str):
     """
     Print system information for the V5
     """
+    from pros.serial.devices.vex import V5Device
+    from pros.serial.ports import DirectPort
     port = resolve_v5_port(port, 'system')
     if not port:
         return -1
 
     ser = DirectPort(port)
     device = V5Device(ser)
-    status = device.get_system_status()
     if ismachineoutput():
-        print(status)
+        print(device.status)
     else:
         print('Connected to V5 on {}'.format(port))
-        print('System version:', '{}.{}.{}b{}'.format(*status['system_version']))
-        print('CPU0 F/W version:', '{}.{}.{}b{}'.format(*status['cpu0_version']))
-        print('CPU1 SDK version:', '{}.{}.{}b{}'.format(*status['cpu1_version']))
-        print('System ID: 0x{:x}'.format(status['system_id']))
+        print('System version:', device.status['system_version'])
+        print('CPU0 F/W version:', device.status['cpu0_version'])
+        print('CPU1 SDK version:', device.status['cpu1_version'])
+        print('System ID: 0x{:x}'.format(device.status['system_id']))
 
 
 @v5.command('ls-files')
@@ -49,6 +47,8 @@ def ls_files(port: str, vid: int, options: int):
     """
     List files on the flash filesystem
     """
+    from pros.serial.devices.vex import V5Device
+    from pros.serial.ports import DirectPort
     port = resolve_v5_port(port, 'system')
     if not port:
         return -1
@@ -71,6 +71,8 @@ def read_file(file_name: str, port: str, vid: int, source: str):
     """
     Read file on the flash filesystem to stdout
     """
+    from pros.serial.devices.vex import V5Device
+    from pros.serial.ports import DirectPort
     port = resolve_v5_port(port, 'system')
     if not port:
         return -1
@@ -94,6 +96,8 @@ def write_file(file, port: str, remote_file: str, **kwargs):
     """
     Write a file to the V5.
     """
+    from pros.serial.ports import DirectPort
+    from pros.serial.devices.vex import V5Device
     port = resolve_v5_port(port, 'system')
     if not port:
         return -1
@@ -114,6 +118,8 @@ def rm_file(file_name: str, port: str, vid: int, erase_all: bool):
     """
     Remove a file from the flash filesystem
     """
+    from pros.serial.devices.vex import V5Device
+    from pros.serial.ports import DirectPort
     port = resolve_v5_port(port, 'system')
     if not port:
         return -1
@@ -131,6 +137,8 @@ def rm_all(port: str, vid: int):
     """
     Remove all user programs from the V5
     """
+    from pros.serial.devices.vex import V5Device
+    from pros.serial.ports import DirectPort
     port = resolve_v5_port(port, 'system')
     if not port:
         return -1
@@ -155,9 +163,11 @@ def run(file: str, port: str):
 
     If FILE is unspecified or is a directory, then attempts to find the correct filename based on the PROS project
     """
-    import pros.conductor as c
+    from pros.serial.devices.vex import V5Device
+    from pros.serial.ports import DirectPort
     import re
     if not file or os.path.isdir(file):
+        import pros.conductor as c
         path = c.Project.find_project(file)
         if path:
             file = f'{c.Project(path).name}.bin'
@@ -180,9 +190,11 @@ def stop(file: str, port: str):
 
     If FILE is unspecified or is a directory, then attempts to find the correct filename based on the PROS project
     """
-    import pros.conductor as c
+    from pros.serial.devices.vex import V5Device
+    from pros.serial.ports import DirectPort
     import re
     if not file or os.path.isdir(file):
+        import pros.conductor as c
         path = c.Project.find_project(file)
         if path:
             file = f'{c.Project(path).name}.bin'
