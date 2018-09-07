@@ -95,7 +95,8 @@ class Conductor(Config):
         self.save()
 
     def resolve_templates(self, identifier: Union[str, BaseTemplate], allow_online: bool = True,
-                          allow_offline: bool = True, force_refresh: bool = False, **kwargs) -> List[BaseTemplate]:
+                          allow_offline: bool = True, force_refresh: bool = False,
+                          unique: bool = False, **kwargs) -> List[BaseTemplate]:
         results = []
         kernel_version = kwargs.get('kernel_version', None)
         if isinstance(identifier, str):
@@ -110,7 +111,7 @@ class Conductor(Config):
             self.save()  # Save self since there may have been some updates from the depots
         if allow_offline:
             results.extend(filter(lambda t: t.satisfies(query, kernel_version=kernel_version), self.local_templates))
-        return results
+        return results if not unique else list({r.identifier: r for r in results}.values())
 
     def resolve_template(self, identifier: Union[str, BaseTemplate], **kwargs) -> Optional[BaseTemplate]:
         if isinstance(identifier, str):

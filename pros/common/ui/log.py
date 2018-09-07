@@ -5,7 +5,7 @@ import jsonpickle
 
 from pros.common import isdebug
 
-_machine_pickler = jsonpickle.JSONBackend()
+from .basic import machinepickler
 
 
 class PROSLogHandler(logging.StreamHandler):
@@ -32,7 +32,7 @@ class PROSLogHandler(logging.StreamHandler):
                 }
                 if record.exc_info:
                     obj['trace'] = formatter.formatException(record.exc_info)
-                msg = f'Uc&42BWAaQ{jsonpickle.dumps(obj, unpicklable=False, backend=_machine_pickler)}'
+                msg = f'Uc&42BWAaQ{jsonpickle.dumps(obj, unpicklable=False, backend=machinepickler)}'
             else:
                 msg = self.format(record)
             click.echo(msg)

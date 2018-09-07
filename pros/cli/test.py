@@ -13,26 +13,33 @@ def test_cli():
 @test_cli.command()
 @default_options
 def test():
-    ui.echo('Hello World!')
-    with ui.Notification():
-        ui.echo('Hello from another box')
-    ui.echo('Back on the other one', nl=False)
-    ui.echo('Whoops I missed a newline')
-    with ui.Notification():
-        ui.echo('Yet another box')
-        with ui.progressbar(range(20)) as bar:
-            for _ in bar:
-                time.sleep(0.1)
-        ui.echo('more below the ', nl=False)
-        ui.echo('progressbar')
-    ui.echo('Back in the other notification')
+    # ui.echo('Hello World!')
+    # with ui.Notification():
+    #     ui.echo('Hello from another box')
+    # ui.echo('Back on the other one', nl=False)
+    # ui.echo('Whoops I missed a newline')
+    # with ui.Notification():
+    #     ui.echo('Yet another box')
+    #     with ui.progressbar(range(20)) as bar:
+    #         for _ in bar:
+    #             time.sleep(0.1)
+    #     ui.echo('more below the ', nl=False)
+    #     ui.echo('progressbar')
+    # ui.echo('Back in the other notification')
+    #
+    # logger(__name__).warning('Hello')
+    # try:
+    #     raise Exception('Hey')
+    # except Exception as e:
+    #     logger(__name__).exception(e)
+    #
+    # ui.finalize('test', {'hello': 'world'}, human_prefix='Created ')
 
-    logger(__name__).warning('Hello')
-    try:
-        raise Exception('Hey')
-    except Exception as e:
-        logger(__name__).exception(e)
+    import pros.common.ui.interactive as iui
+    from pros.conductor.interactive import NewProjectPrompt
+    from pros.conductor import Conductor
 
-    ui.finalize('test', {'hello': 'world'}, human_prefix='Created ')
+    NewProjectPrompt(Conductor()).execute()
+
 
     ui.finalize('what', ui.confirm('Hey'))

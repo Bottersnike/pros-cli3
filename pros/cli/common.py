@@ -14,7 +14,7 @@ def verbose_option(f):
         if not isinstance(value, int):
             raise ValueError('Invalid log level: {}'.format(value))
         if value:
-            logger().setLevel(min(logger().level, logging.INFO))
+            logger().setLevel(max(logger().level, logging.INFO))
             stdout_handler = ctx.obj['click_handler']  # type: logging.Handler
             stdout_handler.setLevel(logging.INFO)
             logger(__name__).info('Verbose messages enabled')
@@ -34,7 +34,7 @@ def debug_option(f):
         if not isinstance(value, int):
             raise ValueError('Invalid log level: {}'.format(value))
         if value:
-            logging.getLogger().setLevel(min(logger().level, logging.DEBUG))
+            logging.getLogger().setLevel(max(logger().level, logging.DEBUG))
             stdout_handler = ctx.obj['click_handler']  # type: logging.Handler
             stdout_handler.setLevel(logging.DEBUG)
             logging.getLogger(__name__).info('Debugging messages enabled')
@@ -55,7 +55,7 @@ def logging_option(f):
             value = getattr(logging, value.upper(), None)
         if not isinstance(value, int):
             raise ValueError('Invalid log level: {}'.format(value))
-        logging.getLogger().setLevel(min(logger().level, value))
+        logging.getLogger().setLevel(max(logger().level, value))
         stdout_handler = ctx.obj['click_handler']  # type: logging.Handler
         stdout_handler.setLevel(value)
         return value
@@ -82,7 +82,7 @@ def logfile_option(f):
         logging.getLogger().addHandler(handler)
         stdout_handler = ctx.obj['click_handler']  # type: logging.Handler
         stdout_handler.setLevel(logging.getLogger().level)  # pin stdout_handler to its current log level
-        logging.getLogger().setLevel(min(logging.getLogger().level, level))
+        logging.getLogger().setLevel(max(logging.getLogger().level, level))
 
     return click.option('--logfile', help='Log messages to a file', is_eager=True, expose_value=False,
                         callback=callback, default=(None, None),
