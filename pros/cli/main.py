@@ -1,11 +1,10 @@
 import logging
 import os.path
-
-import pros.common.sentry
-
-import click
 import sys
 
+import click
+
+import pros.common.sentry
 import pros.common.ui as ui
 import pros.common.ui.log
 from pros.cli.click_classes import *
@@ -27,7 +26,7 @@ if getattr(sys, 'frozen', False):
 else:
     exe_file = __file__
 
-if os.path.exists(os.path.join(exe_file, '..', '..', '..', '.git')):
+if os.path.exists(os.path.join(os.path.dirname(exe_file), os.pardir, os.pardir, '.git')):
     root_sources.append('test')
 
 for root_source in root_sources:
