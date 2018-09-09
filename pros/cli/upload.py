@@ -60,6 +60,7 @@ def upload(path: str, port: str, **kwargs):
         if 'name' not in kwargs:
             kwargs['name'] = project.name
     if 'target' not in kwargs:
+        logger(__name__).debug(f'Target not specified. Arguments provided: {kwargs}')
         raise click.UsageError('Target not specified. specify a project (using the file argument) or target manually')
 
     if kwargs['target'] == 'v5':
@@ -67,6 +68,8 @@ def upload(path: str, port: str, **kwargs):
     elif kwargs['target'] == 'cortex':
         port = resolve_cortex_port(port)
     if not port:
+        logger(__name__).debug(f"Invalid target provided: {kwargs['target']}")
+        logger(__name__).debug('Target should be one of ("v5" or "cortex").')
         return -1
 
     if kwargs['target'] == 'v5':
