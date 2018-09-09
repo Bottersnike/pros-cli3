@@ -42,7 +42,6 @@ def fetch(query: c.BaseTemplate):
     """
 
     template_file = None
-    found_templates = ''
     if os.path.exists(query.identifier):
         template_file = query.identifier
     elif os.path.exists(query.name) and query.version is None:
