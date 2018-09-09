@@ -67,9 +67,10 @@ def upload(path: str, port: str, **kwargs):
         port = resolve_v5_port(port, 'system')
     elif kwargs['target'] == 'cortex':
         port = resolve_cortex_port(port)
-    if not port:
+    else:
         logger(__name__).debug(f"Invalid target provided: {kwargs['target']}")
         logger(__name__).debug('Target should be one of ("v5" or "cortex").')
+    if not port:
         return -1
 
     if kwargs['target'] == 'v5':
