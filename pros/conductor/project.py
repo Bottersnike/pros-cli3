@@ -217,6 +217,13 @@ class Project(Config):
                 if os.environ.get('PROS_TOOLCHAIN'):
                     environment['PATH'] = os.path.join(os.environ.get('PROS_TOOLCHAIN'), 'bin') + os.pathsep + \
                                           environment['PATH']
+
+                if sys.platform == 'darwin':
+                    logger(__name__).debug(f"adding {os.path.dirname(os.path.abspath(sys.executable))} to PATH")
+                    environment['PATH'] = os.path.dirname(os.path.abspath(sys.executable)) + os.pathsep + environment['PATH']
+
+                logger(__name__).debug(environment['PATH'])
+
                 if not suppress_output:
                     pipe = EchoPipe()
                 else:
